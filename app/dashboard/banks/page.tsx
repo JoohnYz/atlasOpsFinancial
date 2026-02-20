@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Landmark } from "lucide-react"
+import { Search, Landmark, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { CRMLayout } from "@/components/crm-layout"
@@ -110,13 +110,25 @@ export default function BanksPage() {
                             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Bancos</h1>
                             <p className="text-muted-foreground mt-1">Registra y administra las cuentas bancarias</p>
                         </div>
-                        <AddBankModal
-                            onBankAdded={fetchBanks}
-                            open={modalOpen}
-                            onOpenChange={setModalOpen}
-                            bankToEdit={bankToEdit}
-                            mode={bankToEdit ? "edit" : "add"}
-                        />
+                        <div className="flex items-center gap-3">
+                            <AddBankModal
+                                onBankAdded={fetchBanks}
+                                open={modalOpen}
+                                onOpenChange={setModalOpen}
+                                bankToEdit={bankToEdit}
+                                mode={bankToEdit ? "edit" : "add"}
+                            />
+                            <Button
+                                onClick={() => {
+                                    setBankToEdit(null)
+                                    setModalOpen(true)
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Agregar Cuenta
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="relative max-w-md">
