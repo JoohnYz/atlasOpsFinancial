@@ -19,6 +19,27 @@ export async function createBank(formData: FormData) {
             return { error: "Faltan datos requeridos" }
         }
 
+        // Check for duplicates
+        const { data: existingBank, error: checkError } = await supabase
+            .from("banks")
+            .select("id")
+            .eq("bank_name", bank_name)
+            .eq("account_holder", account_holder)
+            .eq("document_type", document_type)
+            .eq("document_number", document_number)
+            .eq("email", email)
+            .eq("phone_number", phone_number)
+            .maybeSingle()
+
+        if (checkError) {
+            console.error("Error checking for duplicate bank:", checkError)
+        }
+
+        if (existingBank) {
+            return { error: "Ya existe una cuenta con exactamente estos mismos datos." }
+        }
+
+
         const { error } = await supabase.from("banks").insert({
             bank_name,
             account_holder,
@@ -55,6 +76,28 @@ export async function updateBank(id: string, formData: FormData) {
         if (!bank_name || !account_holder || !document_type || !document_number || !email || !phone_number) {
             return { error: "Faltan datos requeridos" }
         }
+
+        // Check for duplicates (excluding current ID)
+        const { data: existingBank, error: checkError } = await supabase
+            .from("banks")
+            .select("id")
+            .eq("bank_name", bank_name)
+            .eq("account_holder", account_holder)
+            .eq("document_type", document_type)
+            .eq("document_number", document_number)
+            .eq("email", email)
+            .eq("phone_number", phone_number)
+            .neq("id", id)
+            .maybeSingle()
+
+        if (checkError) {
+            console.error("Error checking for duplicate bank on update:", checkError)
+        }
+
+        if (existingBank) {
+            return { error: "Ya existe una cuenta con exactamente estos mismos datos." }
+        }
+
 
         const { error } = await supabase
             .from("banks")
