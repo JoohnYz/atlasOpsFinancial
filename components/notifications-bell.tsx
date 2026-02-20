@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Bell } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { useRealtime } from "@/hooks/use-realtime"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -61,7 +62,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
         localStorage.setItem('seen_notification_ids_v3', JSON.stringify(seenIds))
     }, [seenIds])
 
-    const fetchPendingOrders = async () => {
+    const fetchPendingOrders = useCallback(async () => {
         setLoading(true)
         const result = await getPendingPaymentOrders()
         if (result.data) {
@@ -87,9 +88,9 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
             knownPendingIds.current = new Set(newPending.map(a => a.id))
         }
         setLoading(false)
-    }
+    }, [isInitialLoad, canManage])
 
-    const fetchHistoryOrders = async (isSilent = false) => {
+    const fetchHistoryOrders = useCallback(async (isSilent = false) => {
         if (!isSilent) setHistoryLoading(true)
         const result = await getPaymentOrderHistory()
         if (result.data) {
@@ -137,7 +138,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
             }
         }
         if (!isSilent) setHistoryLoading(false)
-    }
+    }, [isInitialLoad, currentUserEmail])
 
     useEffect(() => {
         if (view === 'history' && open) {
@@ -145,19 +146,17 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
         }
     }, [view, open])
 
-    useEffect(() => {
+    const refreshData = useCallback(async () => {
         if (!canAccess) return
+        await fetchPendingOrders()
+        await fetchHistoryOrders(true)
+    }, [canAccess, fetchPendingOrders, fetchHistoryOrders])
 
-        const pollData = async () => {
-            await fetchPendingOrders()
-            await fetchHistoryOrders(true)
-        }
+    useEffect(() => {
+        refreshData()
+    }, [refreshData])
 
-        pollData()
-
-        const interval = setInterval(pollData, 15000)
-        return () => clearInterval(interval)
-    }, [canAccess]) // Polling depends on access
+    useRealtime("payment_orders", refreshData)
 
     const handleItemClick = (order?: PaymentOrder) => {
         if (order) {

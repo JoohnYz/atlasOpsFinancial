@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Search, Landmark, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client"
 import { deleteBank } from "@/lib/bank-actions"
 import type { Bank } from "@/lib/types"
 import { toast } from "sonner"
+import { useRealtime } from "@/hooks/use-realtime"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,7 +32,7 @@ export default function BanksPage() {
     const [modalOpen, setModalOpen] = useState(false)
     const [bankToDelete, setBankToDelete] = useState<Bank | null>(null)
 
-    const fetchBanks = async () => {
+    const fetchBanks = useCallback(async () => {
         try {
             const supabase = createClient()
             const { data, error } = await supabase
@@ -52,11 +53,13 @@ export default function BanksPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchBanks()
-    }, [])
+    }, [fetchBanks])
+
+    useRealtime("banks", fetchBanks)
 
     const handleEdit = (bank: Bank) => {
         setBankToEdit(bank)

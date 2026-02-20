@@ -1,8 +1,10 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { useRealtime } from "@/hooks/use-realtime"
 import { Check, X, MoreHorizontal, Pencil, Trash, Plus, ShieldCheck, Download, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 
@@ -51,6 +53,7 @@ interface PaymentOrdersClientProps {
 }
 
 export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }: PaymentOrdersClientProps) {
+    const router = useRouter()
     const [modalOpen, setModalOpen] = useState(false)
     const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
@@ -65,6 +68,11 @@ export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
+
+    // Listen for real-time changes to the payment_orders table
+    useRealtime("payment_orders", () => {
+        router.refresh()
+    })
 
     // Filter logic
     const filteredPaymentOrders = useMemo(() => {
