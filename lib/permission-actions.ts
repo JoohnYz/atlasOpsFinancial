@@ -26,6 +26,7 @@ export async function getUserPermissions(email: string): Promise<UserPermission 
             access_banks: true,
             manage_payment_orders: true,
             manage_banks: true,
+            access_notifications: true,
             assign_access: true,
         }
     }
@@ -113,10 +114,11 @@ export async function updateUserPermissions(permission: Partial<UserPermission> 
             error.code === 'PGRST204' ||
             error.code === '42703' || // Undefined column
             error.message?.includes('manage_payment_orders') ||
-            error.message?.includes('manage_banks')
+            error.message?.includes('manage_banks') ||
+            error.message?.includes('access_notifications')
         ) {
             return {
-                error: "La base de datos no ha sido actualizada. Por favor, ejecuta el script de migración SQL correspondiente (011 o 013) en Supabase."
+                error: "La base de datos no ha sido actualizada. Por favor, ejecuta el script de migración SQL correspondiente (011, 013 o 014) en Supabase."
             }
         }
         return { error: `Error al actualizar permisos: ${error.message}` }

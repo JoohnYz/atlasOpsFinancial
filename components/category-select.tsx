@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { createClient } from "@/lib/supabase/client"
 import { getEmojiFromText, categoryEmojis } from "@/lib/emoji-utils"
+import { getUserPermissions } from "@/lib/permission-actions"
+import { toast } from "sonner"
 
 interface Category {
   id: string
@@ -30,9 +32,24 @@ export function CategorySelect({ value, onChange, label = "Categoría" }: Catego
   const [selectedEmoji, setSelectedEmoji] = useState("📦")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [canAdd, setCanAdd] = useState(false)
 
   useEffect(() => {
-    loadCategories()
+    const initialize = async () => {
+      setLoading(true)
+      await loadCategories()
+
+      // Check permissions
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        const perms = await getUserPermissions(user.email)
+        const isAdmin = user.email === 'admin@atlasops.com'
+        setCanAdd(isAdmin || !!perms?.access_notifications)
+      }
+      setLoading(false)
+    }
+    initialize()
   }, [])
 
   const loadCategories = async () => {
@@ -68,6 +85,16 @@ export function CategorySelect({ value, onChange, label = "Categoría" }: Catego
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return
+
+    // Duplicate check
+    const isDuplicate = categories.some(
+      (cat) => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase()
+    )
+
+    if (isDuplicate) {
+      toast.error("Ya existe una categoría con este nombre")
+      return
+    }
 
     try {
       const supabase = createClient()
@@ -137,16 +164,18 @@ export function CategorySelect({ value, onChange, label = "Categoría" }: Catego
               ))}
             </SelectContent>
           </Select>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => setIsAddingNew(true)}
-            className="border-border"
-            title="Agregar categoría personalizada"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
+          {canAdd && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setIsAddingNew(true)}
+              className="border-border"
+              title="Agregar categoría personalizada"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-3 p-3 border border-border rounded-lg bg-secondary/30">

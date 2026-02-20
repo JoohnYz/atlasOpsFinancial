@@ -125,6 +125,7 @@ export interface UserPermission {
   access_banks: boolean
   manage_payment_orders: boolean
   manage_banks: boolean
+  access_notifications: boolean
   assign_access: boolean
   created_at?: string
   updated_at?: string
