@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* By default (Light Mode active / To Light): Old (Dark) is on top */
+::view-transition-old(root) {
+  z-index: 2147483646;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+}
+
+/* When Dark Mode active (To Dark): New (Dark) is on top */
+.dark::view-transition-old(root) {
+  z-index: 1;
+}
+
+.dark::view-transition-new(root) {
+  z-index: 2147483646;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --font-sans: var(--font-poppins);
+    /* Light theme - professional, clean, modern */
+    --background: 0 0% 100%;
+    --foreground: 15 15% 15%;
+    --card: 210 50% 98%;
+    --card-foreground: 15 15% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 15 15% 15%;
+    --primary: 207 89% 37%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 92%;
+    --secondary-foreground: 15 15% 30%;
+    --muted: 210 20% 75%;
+    --muted-foreground: 15 15% 45%;
+    --accent: 207 89% 37%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 25% 90%;
+    --input: 0 0% 100%;
+    --ring: 207 89% 37%;
+    --chart-1: 207 89% 37%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 25 95% 53%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 280 65% 60%;
+    --radius: 1rem;
+    --sidebar-background: 210 35% 97%;
+    --sidebar-foreground: 15 15% 25%;
+    --sidebar-primary: 207 89% 37%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 50% 92%;
+    --sidebar-accent-foreground: 207 89% 37%;
+    --sidebar-border: 210 25% 90%;
+    --sidebar-ring: 207 89% 37%;
+    /* Custom tokens */
+    --income: 142 76% 36%;
+    --expense: 0 84% 60%;
+    --payroll: 207 89% 37%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold text-foreground;
+  }
+}
