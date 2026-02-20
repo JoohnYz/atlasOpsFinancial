@@ -4,7 +4,7 @@ import type React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, TrendingDown, TrendingUp, Users, Wallet, BarChart3, Settings, Menu, X, LogOut, ShieldCheck } from "lucide-react"
+import { LayoutDashboard, TrendingDown, TrendingUp, Users, Wallet, BarChart3, Settings, Menu, X, LogOut, ShieldCheck, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState, useEffect } from "react"
@@ -21,7 +21,8 @@ const navigation = [
   { name: "Personal", href: "/staff", icon: Users, permission: "access_staff" },
   { name: "Nómina", href: "/payroll", icon: Wallet, permission: "access_payroll" },
   { name: "Reportes", href: "/reports", icon: BarChart3, permission: "access_reports" },
-  { name: "Autorizaciones", href: "/dashboard/authorizations", icon: ShieldCheck, permission: "access_authorizations" },
+  { name: "Ordenes de pago", href: "/dashboard/payment-orders", icon: ShieldCheck, permission: "access_payment_orders" },
+  { name: "Bancos", href: "/dashboard/banks", icon: Building, permission: "access_banks" },
   { name: "Configuración", href: "/settings", icon: Settings, permission: null },
 ]
 
@@ -170,8 +171,8 @@ export function CRMLayout({ children, balance, percentageChange, isIncrease }: C
 
           <ModeToggle />
           <NotificationsBell
-            canAccess={permissions?.email === 'admin@atlasops.com' || permissions?.access_authorizations === true}
-            canManage={permissions?.email === 'admin@atlasops.com' || permissions?.manage_authorizations === true}
+            canAccess={permissions?.email === 'admin@atlasops.com' || permissions?.access_payment_orders === true}
+            canManage={permissions?.email === 'admin@atlasops.com' || permissions?.manage_payment_orders === true}
             currentUserEmail={permissions?.email}
           />
 

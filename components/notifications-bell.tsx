@@ -11,8 +11,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { getPendingAuthorizations, getAuthorizationHistory } from "@/lib/actions"
-import { Authorization } from "@/lib/types"
+import { getPendingPaymentOrders, getPaymentOrderHistory } from "@/lib/actions"
+import { PaymentOrder } from "@/lib/types"
 import { Clock, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "sonner"
 
@@ -24,8 +24,8 @@ interface NotificationsBellProps {
 
 export function NotificationsBell({ canAccess = false, canManage = false, currentUserEmail }: NotificationsBellProps) {
     const router = useRouter()
-    const [pendingAuths, setPendingAuths] = useState<Authorization[]>([])
-    const [historyAuths, setHistoryAuths] = useState<Authorization[]>([])
+    const [pendingOrders, setPendingOrders] = useState<PaymentOrder[]>([])
+    const [historyOrders, setHistoryOrders] = useState<PaymentOrder[]>([])
     const [view, setView] = useState<'pending' | 'history'>('pending')
     const [loading, setLoading] = useState(true)
     const [historyLoading, setHistoryLoading] = useState(false)
@@ -38,7 +38,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
     const [isInitialLoad, setIsInitialLoad] = useState(true)
 
     // Helper to get composite key - NOW ID ONLY for v3
-    const getSeenKey = (auth: Authorization) => auth.id
+    const getSeenKey = (order: PaymentOrder) => order.id
 
     // Load seen IDs from localStorage on mount
     useEffect(() => {
@@ -61,11 +61,11 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
         localStorage.setItem('seen_notification_ids_v3', JSON.stringify(seenIds))
     }, [seenIds])
 
-    const fetchPendingAuths = async () => {
+    const fetchPendingOrders = async () => {
         setLoading(true)
-        const result = await getPendingAuthorizations()
+        const result = await getPendingPaymentOrders()
         if (result.data) {
-            const newPending = result.data as Authorization[]
+            const newPending = result.data as PaymentOrder[]
 
             // Check for new pending payments (only for managers)
             if (!isInitialLoad && canManage) {
@@ -83,17 +83,17 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                 })
             }
 
-            setPendingAuths(newPending)
+            setPendingOrders(newPending)
             knownPendingIds.current = new Set(newPending.map(a => a.id))
         }
         setLoading(false)
     }
 
-    const fetchHistoryAuths = async (isSilent = false) => {
+    const fetchHistoryOrders = async (isSilent = false) => {
         if (!isSilent) setHistoryLoading(true)
-        const result = await getAuthorizationHistory()
+        const result = await getPaymentOrderHistory()
         if (result.data) {
-            const newHistory = result.data as Authorization[]
+            const newHistory = result.data as PaymentOrder[]
 
             // Check for status changes (new entries in history)
             if (!isInitialLoad) {
@@ -130,7 +130,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                 })
             }
 
-            setHistoryAuths(newHistory)
+            setHistoryOrders(newHistory)
             knownHistoryIds.current = new Set(newHistory.map(a => a.id))
             if (isInitialLoad) {
                 setIsInitialLoad(false)
@@ -141,7 +141,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
 
     useEffect(() => {
         if (view === 'history' && open) {
-            fetchHistoryAuths()
+            fetchHistoryOrders()
         }
     }, [view, open])
 
@@ -149,8 +149,8 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
         if (!canAccess) return
 
         const pollData = async () => {
-            await fetchPendingAuths()
-            await fetchHistoryAuths(true)
+            await fetchPendingOrders()
+            await fetchHistoryOrders(true)
         }
 
         pollData()
@@ -159,23 +159,23 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
         return () => clearInterval(interval)
     }, [canAccess]) // Polling depends on access
 
-    const handleItemClick = (auth?: Authorization) => {
-        if (auth) {
-            const key = getSeenKey(auth)
+    const handleItemClick = (order?: PaymentOrder) => {
+        if (order) {
+            const key = getSeenKey(order)
             if (!seenIds.includes(key)) {
                 setSeenIds([...seenIds, key])
             }
         }
         setOpen(false)
-        router.push("/dashboard/authorizations")
+        router.push("/dashboard/payment-orders")
     }
 
     const handleMarkAllAsRead = () => {
         // Mark ALL current notifications as read, not just the currently unread ones
         // This ensures they stay in history and don't pop back to pending if something changes
         const allNotifications = [
-            ...pendingAuths,
-            ...historyAuths
+            ...pendingOrders,
+            ...historyOrders
         ]
 
         if (allNotifications.length === 0) return
@@ -190,21 +190,21 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
 
     if (!canAccess) return null
 
-    const unreadPendingAuths = pendingAuths.filter(a => !seenIds.includes(getSeenKey(a)))
-    const unreadHistoryAuths = historyAuths.filter(a => {
+    const unreadPendingOrders = pendingOrders.filter(a => !seenIds.includes(getSeenKey(a)))
+    const unreadHistoryOrders = historyOrders.filter(a => {
         const isCreator = currentUserEmail && a.created_by === currentUserEmail
         const shouldBeNotified = isCreator // Restrict to creator only
         return shouldBeNotified && !seenIds.includes(getSeenKey(a))
     })
 
-    const pendingCount = (canManage ? unreadPendingAuths.length : 0)
-    const unreadHistoryCount = unreadHistoryAuths.length
+    const pendingCount = (canManage ? unreadPendingOrders.length : 0)
+    const unreadHistoryCount = unreadHistoryOrders.length
 
     const totalUnreadCount = pendingCount + unreadHistoryCount
 
-    const seenPendingAuths = pendingAuths.filter(a => seenIds.includes(getSeenKey(a)))
-    const seenHistoryAuths = historyAuths.filter(a => seenIds.includes(getSeenKey(a)))
-    const totalSeenCount = seenPendingAuths.length + seenHistoryAuths.length
+    const seenPendingOrders = pendingOrders.filter(a => seenIds.includes(getSeenKey(a)))
+    const seenHistoryOrders = historyOrders.filter(a => seenIds.includes(getSeenKey(a)))
+    const totalSeenCount = seenPendingOrders.length + seenHistoryOrders.length
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -272,51 +272,51 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                             {!loading && totalUnreadCount > 0 ? (
                                 <div className="grid gap-2 max-h-[400px] overflow-y-auto pr-1">
                                     {/* Unread Status Changes (Approvals/Rejections) */}
-                                    {unreadHistoryAuths.map((auth) => (
+                                    {unreadHistoryOrders.map((order) => (
                                         <div
-                                            key={auth.id}
-                                            onClick={() => handleItemClick(auth)}
+                                            key={order.id}
+                                            onClick={() => handleItemClick(order)}
                                             className="flex items-center justify-between p-2 rounded-lg bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 hover:bg-blue-100/50 dark:hover:bg-blue-800/30 cursor-pointer transition-colors"
                                         >
                                             <div className="flex items-center gap-2">
-                                                {auth.status === 'approved' ? (
+                                                {order.status === 'approved' ? (
                                                     <CheckCircle className="h-4 w-4 text-green-500" />
                                                 ) : (
                                                     <XCircle className="h-4 w-4 text-red-500" />
                                                 )}
                                                 <div className="grid gap-1">
                                                     <div className="flex items-center gap-1">
-                                                        <p className="text-sm font-medium leading-none truncate max-w-[120px]">{auth.description}</p>
+                                                        <p className="text-sm font-medium leading-none truncate max-w-[120px]">{order.description}</p>
                                                         <span className="bg-blue-600 dark:bg-blue-500 text-[8px] text-white px-1 rounded-full font-bold uppercase">NUEVO</span>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground">{format(new Date(auth.date), "dd/MM/yyyy")}</p>
+                                                    <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy")}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    {auth.currency === 'BS' ? 'Bs.' : '$'} {auth.amount.toLocaleString('en-US')}
+                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
                                                 </p>
-                                                <span className={`text-[10px] uppercase font-bold ${auth.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {auth.status === 'approved' ? 'Aprobado' : 'Rechazado'}
+                                                <span className={`text-[10px] uppercase font-bold ${order.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {order.status === 'approved' ? 'Aprobado' : 'Rechazado'}
                                                 </span>
                                             </div>
                                         </div>
                                     ))}
 
-                                    {/* Actual Pending Authorizations (Only for Managers) */}
-                                    {canManage && unreadPendingAuths.map((auth) => (
+                                    {/* Actual Pending Payment Orders (Only for Managers) */}
+                                    {canManage && unreadPendingOrders.map((order) => (
                                         <div
-                                            key={auth.id}
+                                            key={order.id}
                                             className="flex items-center justify-between p-2 rounded-lg border border-transparent hover:bg-accent cursor-pointer transition-colors"
-                                            onClick={() => handleItemClick(auth)}
+                                            onClick={() => handleItemClick(order)}
                                         >
                                             <div className="grid gap-1">
-                                                <p className="text-sm font-medium leading-none truncate max-w-[150px]">{auth.description}</p>
-                                                <p className="text-xs text-muted-foreground">{format(new Date(auth.date), "dd/MM/yyyy")}</p>
+                                                <p className="text-sm font-medium leading-none truncate max-w-[150px]">{order.description}</p>
+                                                <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy")}</p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                    {auth.currency === 'BS' ? 'Bs.' : '$'} {auth.amount.toLocaleString('en-US')}
+                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
                                                 </p>
                                                 <span className="text-[10px] uppercase font-bold text-blue-600/70 dark:text-blue-400/70">Pendiente</span>
                                             </div>
@@ -351,48 +351,48 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                             ) : totalSeenCount > 0 ? (
                                 <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-1">
                                     {/* Seen Status Changes */}
-                                    {seenHistoryAuths.map((auth) => (
+                                    {seenHistoryOrders.map((order) => (
                                         <div
-                                            key={auth.id}
-                                            onClick={() => handleItemClick(auth)}
+                                            key={order.id}
+                                            onClick={() => handleItemClick(order)}
                                             className="flex items-center justify-between p-2 rounded-lg hover:bg-accent transition-colors border border-transparent hover:border-border cursor-pointer opacity-80"
                                         >
                                             <div className="flex items-center gap-2">
-                                                {auth.status === 'approved' ? (
+                                                {order.status === 'approved' ? (
                                                     <CheckCircle className="h-4 w-4 text-green-500" />
                                                 ) : (
                                                     <XCircle className="h-4 w-4 text-red-500" />
                                                 )}
                                                 <div className="grid gap-1">
-                                                    <p className="text-sm font-medium leading-none truncate max-w-[150px]">{auth.description}</p>
-                                                    <p className="text-xs text-muted-foreground">{format(new Date(auth.date), "dd/MM/yyyy")}</p>
+                                                    <p className="text-sm font-medium leading-none truncate max-w-[150px]">{order.description}</p>
+                                                    <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy")}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    {auth.currency === 'BS' ? 'Bs.' : '$'} {auth.amount.toLocaleString('en-US')}
+                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
                                                 </p>
-                                                <span className={`text-[10px] uppercase font-bold ${auth.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {auth.status === 'approved' ? 'Aprobado' : 'Rechazado'}
+                                                <span className={`text-[10px] uppercase font-bold ${order.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {order.status === 'approved' ? 'Aprobado' : 'Rechazado'}
                                                 </span>
                                             </div>
                                         </div>
                                     ))}
 
                                     {/* Seen Pending (Only for Managers) */}
-                                    {canManage && seenPendingAuths.map((auth) => (
+                                    {canManage && seenPendingOrders.map((order) => (
                                         <div
-                                            key={auth.id}
-                                            onClick={() => handleItemClick(auth)}
+                                            key={order.id}
+                                            onClick={() => handleItemClick(order)}
                                             className="flex items-center justify-between p-2 rounded-lg hover:bg-accent transition-colors border border-transparent hover:border-border cursor-pointer opacity-80"
                                         >
                                             <div className="grid gap-1">
-                                                <p className="text-sm font-medium leading-none truncate max-w-[150px]">{auth.description}</p>
-                                                <p className="text-xs text-muted-foreground">{format(new Date(auth.date), "dd/MM/yyyy")}</p>
+                                                <p className="text-sm font-medium leading-none truncate max-w-[150px]">{order.description}</p>
+                                                <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy")}</p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    {auth.currency === 'BS' ? 'Bs.' : '$'} {auth.amount.toLocaleString('en-US')}
+                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
                                                 </p>
                                                 <span className="text-[10px] uppercase font-bold text-blue-600/50">Pendiente</span>
                                             </div>

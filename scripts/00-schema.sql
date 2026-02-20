@@ -103,6 +103,20 @@ CREATE TABLE IF NOT EXISTS payment_authorizations (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+
+-- Banks Table
+CREATE TABLE IF NOT EXISTS banks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  bank_name VARCHAR(255) NOT NULL,
+  account_holder VARCHAR(255) NOT NULL,
+  document_type VARCHAR(50) NOT NULL,
+  document_number VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- User Permissions Table
 CREATE TABLE IF NOT EXISTS user_permissions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -114,6 +128,7 @@ CREATE TABLE IF NOT EXISTS user_permissions (
   access_reports BOOLEAN DEFAULT false,
   access_authorizations BOOLEAN DEFAULT false,
   access_categories BOOLEAN DEFAULT false,
+  access_banks BOOLEAN DEFAULT false,
   manage_authorizations BOOLEAN DEFAULT false,
   assign_access BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -136,6 +151,7 @@ CREATE INDEX IF NOT EXISTS idx_user_permissions_email ON user_permissions(email)
 -- Enable RLS
 ALTER TABLE payment_authorizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE banks ENABLE ROW LEVEL SECURITY;
 
 -- Functions
 CREATE OR REPLACE FUNCTION check_is_manager()
@@ -165,3 +181,7 @@ USING (
   (email = (auth.jwt() ->> 'email')) OR 
   (check_is_manager())
 );
+-- Policies for banks
+DROP POLICY IF EXISTS "Allow read/write for banks to authenticated users" ON banks;
+CREATE POLICY "Allow read/write for banks to authenticated users" ON banks
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);

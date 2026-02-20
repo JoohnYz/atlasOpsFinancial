@@ -1,19 +1,19 @@
 import { createClient as createServerClient } from "@/lib/supabase/server"
-import type { Expense, Income, Staff, PayrollPayment, Category, Authorization } from "./types"
+import type { Expense, Income, Staff, PayrollPayment, Category, PaymentOrder, Bank } from "./types"
 
-export async function getAuthorizations(): Promise<Authorization[]> {
+export async function getPaymentOrders(): Promise<PaymentOrder[]> {
   try {
     const supabase = await createServerClient()
-    const { data, error } = await supabase.from("payment_authorizations").select("*").order("date", { ascending: false })
+    const { data, error } = await supabase.from("payment_orders").select("*").order("date", { ascending: false })
 
     if (error) {
-      console.error("Error fetching authorizations:", error.message)
+      console.error("Error fetching payment orders:", error.message)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error("Error in getAuthorizations:", error)
+    console.error("Error in getPaymentOrders:", error)
     return []
   }
 }
@@ -133,14 +133,32 @@ export async function getCategories(): Promise<Category[]> {
   }
 }
 
+
+export async function getBanks(): Promise<Bank[]> {
+  try {
+    const supabase = await createServerClient()
+    const { data, error } = await supabase.from("banks").select("*").order("bank_name", { ascending: true })
+
+    if (error) {
+      console.error("Error fetching banks:", error.message)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Error in getBanks:", error)
+    return []
+  }
+}
+
 export async function calculateMonthlyBalance() {
   console.log("[v0] calculateMonthlyBalance started")
   const incomes = await getIncomes()
   const expenses = await getExpenses()
   const payroll = await getPayrollPayments()
 
-  const sumIncomes = incomes.reduce((sum, inc) => sum + Number(inc.amount), 0)
-  const sumExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+  const sumIncomes = incomes.reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0)
+  const sumExpenses = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0)
   console.log(`[v0] Data fetched: incomes=${incomes.length} ($${sumIncomes}), expenses=${expenses.length} ($${sumExpenses}), payroll=${payroll.length}`)
 
   // Get current month dates
@@ -190,9 +208,9 @@ export async function calculateMonthlyBalance() {
   const currentBalance = currentMonthIncomeValue - currentMonthExpenseValue - currentMonthPayrollValue
 
   // Calculate previous month balance
-  const previousMonthIncomeValue = previousMonthIncomes.reduce((sum, inc) => sum + Number(inc.amount), 0)
-  const previousMonthExpenseValue = previousMonthExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
-  const previousMonthPayrollValue = previousMonthPayroll.reduce((sum, p) => sum + Number(p.amount), 0)
+  const previousMonthIncomeValue = previousMonthIncomes.reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0)
+  const previousMonthExpenseValue = previousMonthExpenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0)
+  const previousMonthPayrollValue = previousMonthPayroll.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
   const previousBalance = previousMonthIncomeValue - previousMonthExpenseValue - previousMonthPayrollValue
 
   // Calculate percentage change
@@ -208,12 +226,13 @@ export async function calculateMonthlyBalance() {
   const isIncrease = change >= 0
 
   return {
-    balance: currentBalance,
-    percentageChange: Math.abs(change).toFixed(1),
-    isIncrease,
-    totalIncome,
-    totalExpenses,
-    totalPayroll,
-    pendingPayrollCount,
+    balance: currentBalance || 0,
+    overallBalance: (totalIncome || 0) - (totalExpenses || 0) - (totalPayroll || 0),
+    percentageChange: isNaN(change) ? "0.0" : Math.abs(change).toFixed(1),
+    isIncrease: isIncrease || false,
+    totalIncome: totalIncome || 0,
+    totalExpenses: totalExpenses || 0,
+    totalPayroll: totalPayroll || 0,
+    pendingPayrollCount: pendingPayrollCount || 0,
   }
 }

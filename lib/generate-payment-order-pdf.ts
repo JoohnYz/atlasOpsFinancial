@@ -1,6 +1,6 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { Authorization } from "@/lib/types"
+import { PaymentOrder } from "@/lib/types"
 import { format } from "date-fns"
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -12,7 +12,7 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
     })
 }
 
-export const generateAuthorizationPDF = async (authorization: Authorization) => {
+export const generatePaymentOrderPDF = async (order: PaymentOrder) => {
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
@@ -44,7 +44,7 @@ export const generateAuthorizationPDF = async (authorization: Authorization) => 
 
     // Title (Centered)
     doc.setFontSize(18)
-    doc.text("Comprobante de Autorización", 105, 20, { align: "center" })
+    doc.text("Comprobante de Orden de Pago", 105, 20, { align: "center" })
 
     // Company/System Name (Centered)
     doc.setFontSize(12)
@@ -52,16 +52,16 @@ export const generateAuthorizationPDF = async (authorization: Authorization) => 
 
     // 1. General Information Table
     const generalData = [
-        ["Descripción", authorization.description],
-        ["Categoría", authorization.category || "General"],
-        ["Fecha de Solicitud", format(new Date(authorization.created_at), "dd/MM/yyyy HH:mm")],
-        ["Fecha de Aprobación", authorization.updated_at ? format(new Date(authorization.updated_at), "dd/MM/yyyy HH:mm") : format(new Date(), "dd/MM/yyyy HH:mm")],
-        ["Estado", authorization.status === 'approved' ? 'Aprobado' : 'Pendiente'],
+        ["Descripción", order.description],
+        ["Categoría", order.category || "General"],
+        ["Fecha de Solicitud", format(new Date(order.created_at), "dd/MM/yyyy HH:mm")],
+        ["Fecha de Aprobación", order.updated_at ? format(new Date(order.updated_at), "dd/MM/yyyy HH:mm") : format(new Date(), "dd/MM/yyyy HH:mm")],
+        ["Estado", order.status === 'approved' ? 'Aprobado' : 'Pendiente'],
     ]
 
     autoTable(doc, {
         startY: 40,
-        head: [[{ content: 'Información de la Solicitud', colSpan: 2, styles: { halign: 'center', fillColor: [51, 65, 85] } }]],
+        head: [[{ content: 'Información de la Orden de Pago', colSpan: 2, styles: { halign: 'center', fillColor: [51, 65, 85] } }]],
         body: generalData,
         theme: 'grid',
         styles: { fontSize: 9, cellPadding: 4 },
@@ -70,21 +70,21 @@ export const generateAuthorizationPDF = async (authorization: Authorization) => 
 
     // 2. Payment Details Table
     const paymentData: any[][] = [
-        ["Método de Pago", authorization.payment_method],
+        ["Método de Pago", order.payment_method],
     ]
 
-    if (authorization.bank_name) paymentData.push(["Banco", authorization.bank_name])
-    if (authorization.phone_number) paymentData.push(["Teléfono", authorization.phone_number])
-    if (authorization.account_number) paymentData.push(["Número de Cuenta", authorization.account_number])
-    if (authorization.document_type && authorization.document_number) {
-        paymentData.push(["Documento", `${authorization.document_type}-${authorization.document_number}`])
+    if (order.bank_name) paymentData.push(["Banco", order.bank_name])
+    if (order.phone_number) paymentData.push(["Teléfono", order.phone_number])
+    if (order.account_number) paymentData.push(["Número de Cuenta", order.account_number])
+    if (order.document_type && order.document_number) {
+        paymentData.push(["Documento", `${order.document_type}-${order.document_number}`])
     }
-    if (authorization.email) paymentData.push(["Email", authorization.email])
+    if (order.email) paymentData.push(["Email", order.email])
 
     // Final total row styling
     paymentData.push([
         { content: "MONTO TOTAL", styles: { fontStyle: 'bold', textColor: [30, 58, 138] } },
-        { content: `${authorization.currency === 'BS' ? 'Bs.' : '$'} ${authorization.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold', fontSize: 12, textColor: [30, 58, 138] } }
+        { content: `${order.currency === 'BS' ? 'Bs.' : '$'} ${order.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold', fontSize: 12, textColor: [30, 58, 138] } }
     ])
 
     autoTable(doc, {
@@ -153,5 +153,5 @@ export const generateAuthorizationPDF = async (authorization: Authorization) => 
     addPageDecorations()
 
     // Save
-    doc.save(`autorizacion-${authorization.id.slice(0, 8)}.pdf`)
+    doc.save(`orden-pago-${order.id.slice(0, 8)}.pdf`)
 }

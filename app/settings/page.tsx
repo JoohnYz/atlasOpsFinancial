@@ -669,9 +669,10 @@ export default function SettingsPage() {
                           access_staff: false,
                           access_payroll: false,
                           access_reports: false,
-                          access_authorizations: false,
+                          access_payment_orders: false,
                           access_categories: false,
-                          manage_authorizations: false,
+                          access_banks: false,
+                          manage_payment_orders: false,
                           assign_access: false
                         })}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
@@ -711,9 +712,10 @@ export default function SettingsPage() {
                               { id: 'access_staff', label: 'Personal' },
                               { id: 'access_payroll', label: 'Nómina' },
                               { id: 'access_reports', label: 'Reportes' },
-                              { id: 'access_authorizations', label: 'Autorizaciones' },
+                              { id: 'access_payment_orders', label: 'Ordenes de pago' },
                               { id: 'access_categories', label: 'Categorías' },
-                              { id: 'manage_authorizations', label: 'Gestionar Autorizaciones' },
+                              { id: 'access_banks', label: 'Bancos' },
+                              { id: 'manage_payment_orders', label: 'Gestionar Órdenes de pago' },
                               { id: 'assign_access', label: 'Asignar Accesos' },
                             ].map((perm) => (
                               <div key={perm.id} className="flex items-center justify-between">
@@ -761,9 +763,9 @@ export default function SettingsPage() {
                               {permission.access_staff && <Badge variant="secondary" className="text-[10px] py-0">Personal</Badge>}
                               {permission.access_payroll && <Badge variant="secondary" className="text-[10px] py-0">Nómina</Badge>}
                               {permission.access_reports && <Badge variant="secondary" className="text-[10px] py-0">Reportes</Badge>}
-                              {permission.access_authorizations && <Badge variant="secondary" className="text-[10px] py-0">Autorizaciones</Badge>}
+                              {permission.access_payment_orders && <Badge variant="secondary" className="text-[10px] py-0">Ordenes</Badge>}
                               {permission.access_categories && <Badge variant="secondary" className="text-[10px] py-0">Categorías</Badge>}
-                              {permission.manage_authorizations && <Badge variant="secondary" className="text-[10px] py-0">Gestionar Autoriz.</Badge>}
+                              {permission.manage_payment_orders && <Badge variant="secondary" className="text-[10px] py-0">Gestionar Órdenes</Badge>}
                               {permission.assign_access && <Badge variant="default" className="text-[10px] py-0 bg-blue-600">Asignar Accesos</Badge>}
                             </div>
                           </div>

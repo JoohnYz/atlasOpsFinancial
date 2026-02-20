@@ -29,10 +29,10 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AddAuthorizationModal } from "@/components/add-authorization-modal"
-import { PaymentDetailsModal } from "@/components/payment-details-modal"
-import { Authorization } from "@/lib/types"
-import { updateAuthorizationStatus, deleteAuthorization } from "@/lib/actions"
+import { AddPaymentOrderModal } from "@/components/add-payment-order-modal"
+import { PaymentOrderDetailsModal } from "@/components/payment-order-details-modal"
+import { PaymentOrder } from "@/lib/types"
+import { updatePaymentOrderStatus, deletePaymentOrder } from "@/lib/actions"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -44,19 +44,19 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-interface AuthorizationsClientProps {
-    initialAuthorizations: Authorization[]
+interface PaymentOrdersClientProps {
+    initialPaymentOrders: PaymentOrder[]
     canManage: boolean
     isAdmin: boolean
 }
 
-export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin }: AuthorizationsClientProps) {
+export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }: PaymentOrdersClientProps) {
     const [modalOpen, setModalOpen] = useState(false)
     const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
-    const [editingAuth, setEditingAuth] = useState<Authorization | null>(null)
-    const [deletingAuth, setDeletingAuth] = useState<Authorization | null>(null)
-    const [selectedAuth, setSelectedAuth] = useState<Authorization | null>(null)
+    const [editingOrder, setEditingOrder] = useState<PaymentOrder | null>(null)
+    const [deletingOrder, setDeletingOrder] = useState<PaymentOrder | null>(null)
+    const [selectedOrder, setSelectedOrder] = useState<PaymentOrder | null>(null)
 
     // Filter state
     const [searchTerm, setSearchTerm] = useState("")
@@ -67,27 +67,27 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
     const [itemsPerPage, setItemsPerPage] = useState(10)
 
     // Filter logic
-    const filteredAuthorizations = useMemo(() => {
-        return initialAuthorizations.filter(auth => {
+    const filteredPaymentOrders = useMemo(() => {
+        return initialPaymentOrders.filter(order => {
             const matchesSearch =
-                auth.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                auth.payment_method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                auth.amount.toString().includes(searchTerm)
+                order.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.payment_method.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.amount.toString().includes(searchTerm)
 
-            const matchesStatus = statusFilter === "all" || auth.status === statusFilter
+            const matchesStatus = statusFilter === "all" || order.status === statusFilter
 
             return matchesSearch && matchesStatus
         })
-    }, [initialAuthorizations, searchTerm, statusFilter])
+    }, [initialPaymentOrders, searchTerm, statusFilter])
 
     // Derived pagination data
-    const totalItems = filteredAuthorizations.length
+    const totalItems = filteredPaymentOrders.length
     const totalPages = Math.ceil(totalItems / itemsPerPage)
 
-    const displayedAuthorizations = useMemo(() => {
+    const displayedPaymentOrders = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage
-        return filteredAuthorizations.slice(start, start + itemsPerPage)
-    }, [filteredAuthorizations, currentPage, itemsPerPage])
+        return filteredPaymentOrders.slice(start, start + itemsPerPage)
+    }, [filteredPaymentOrders, currentPage, itemsPerPage])
 
     const handleItemsPerPageChange = (value: string) => {
         setItemsPerPage(Number(value))
@@ -97,44 +97,44 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
 
 
     const handleAdd = () => {
-        setEditingAuth(null)
+        setEditingOrder(null)
         setModalOpen(true)
     }
 
-    const handleEdit = (auth: Authorization) => {
-        setEditingAuth(auth)
+    const handleEdit = (order: PaymentOrder) => {
+        setEditingOrder(order)
         setModalOpen(true)
     }
 
-    const handleDelete = (auth: Authorization) => {
+    const handleDelete = (order: PaymentOrder) => {
         if (!isAdmin) {
-            toast.error("Solo el administrador principal puede eliminar autorizaciones")
+            toast.error("Solo el administrador principal puede eliminar órdenes de pago")
             return
         }
-        setDeletingAuth(auth)
+        setDeletingOrder(order)
     }
 
-    const handleRowClick = (auth: Authorization) => {
-        setSelectedAuth(auth)
+    const handleRowClick = (order: PaymentOrder) => {
+        setSelectedOrder(order)
         setDetailsModalOpen(true)
     }
 
     const confirmDelete = async () => {
-        if (!deletingAuth) return
+        if (!deletingOrder) return
 
-        const result = await deleteAuthorization(deletingAuth.id)
+        const result = await deletePaymentOrder(deletingOrder.id)
         if (result.error) {
             toast.error(result.error)
         } else {
-            toast.success("Autorización eliminada")
+            toast.success("Orden de pago eliminada")
         }
-        setDeletingAuth(null)
+        setDeletingOrder(null)
     }
 
     const handleStatusChange = async (id: string, status: "approved" | "rejected") => {
-        console.log(`[AuthorizationsClient] Triggering status change: ${id} -> ${status}`)
-        const result = await updateAuthorizationStatus(id, status)
-        console.log(`[AuthorizationsClient] Server response:`, result)
+        console.log(`[PaymentOrdersClient] Triggering status change: ${id} -> ${status}`)
+        const result = await updatePaymentOrderStatus(id, status)
+        console.log(`[PaymentOrdersClient] Server response:`, result)
         if (result.error) {
             toast.error(result.error)
         } else {
@@ -142,8 +142,8 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
         }
     }
 
-    const getStatusBadge = (auth: Authorization) => {
-        const { status, is_rectified } = auth
+    const getStatusBadge = (order: PaymentOrder) => {
+        const { status, is_rectified } = order
         return (
             <div className="flex flex-col gap-1 items-start">
                 {status === "approved" ? (
@@ -166,7 +166,7 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
         <>
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Autorizaciones</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">Ordenes de pago</h2>
                     <p className="text-muted-foreground">Gestiona y aprueba los pagos pendientes.</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -238,14 +238,14 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {displayedAuthorizations.length === 0 ? (
+                            {displayedPaymentOrders.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-48 text-muted-foreground">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <Search className="h-8 w-8 opacity-20" />
                                             {searchTerm || statusFilter !== "all"
                                                 ? "No se encontraron pagos con estos filtros."
-                                                : "No hay autorizaciones registradas."}
+                                                : "No hay órdenes de pago registradas."}
                                             {(searchTerm || statusFilter !== "all") && (
                                                 <Button
                                                     variant="link"
@@ -262,23 +262,23 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                displayedAuthorizations.map((auth) => (
+                                displayedPaymentOrders.map((order) => (
                                     <TableRow
-                                        key={auth.id}
+                                        key={order.id}
                                         className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                        onClick={() => handleRowClick(auth)}
+                                        onClick={() => handleRowClick(order)}
                                     >
                                         <TableCell>
                                             {/* Fix hydration error by parsing YYYY-MM-DD string directly */}
-                                            {auth.date.includes('T') ? format(new Date(auth.date), "dd/MM/yyyy") : auth.date.split('-').reverse().join('/')}
+                                            {order.date.includes('T') ? format(new Date(order.date), "dd/MM/yyyy") : order.date.split('-').reverse().join('/')}
                                         </TableCell>
-                                        <TableCell className="font-medium">{auth.description}</TableCell>
-                                        <TableCell>{auth.payment_method}</TableCell>
-                                        <TableCell className="text-right">${auth.amount.toLocaleString('en-US')}</TableCell>
-                                        <TableCell>{getStatusBadge(auth)}</TableCell>
+                                        <TableCell className="font-medium">{order.description}</TableCell>
+                                        <TableCell>{order.payment_method}</TableCell>
+                                        <TableCell className="text-right">${order.amount.toLocaleString('en-US')}</TableCell>
+                                        <TableCell>{getStatusBadge(order)}</TableCell>
                                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
-                                                {auth.status === "pending" && canManage && (
+                                                {order.status === "pending" && canManage && (
                                                     <>
                                                         <Button
                                                             variant="ghost"
@@ -286,7 +286,7 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                                                             className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                handleStatusChange(auth.id, "approved")
+                                                                handleStatusChange(order.id, "approved")
                                                             }}
                                                             title="Aprobar"
                                                         >
@@ -298,7 +298,7 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                                                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                handleStatusChange(auth.id, "rejected")
+                                                                handleStatusChange(order.id, "rejected")
                                                             }}
                                                             title="Rechazar"
                                                         >
@@ -317,10 +317,10 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                                            {(auth.status === 'pending' || auth.status === 'rejected') && (
+                                                            {(order.status === 'pending' || order.status === 'rejected') && (
                                                                 <>
-                                                                    <DropdownMenuItem onClick={() => handleEdit(auth)}>
-                                                                        {auth.status === 'rejected' ? (
+                                                                    <DropdownMenuItem onClick={() => handleEdit(order)}>
+                                                                        {order.status === 'rejected' ? (
                                                                             <><Pencil className="mr-2 h-4 w-4" /> Rectificar</>
                                                                         ) : (
                                                                             <><Pencil className="mr-2 h-4 w-4" /> Editar</>
@@ -331,18 +331,18 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                                                             )}
                                                             {isAdmin && (
                                                                 <DropdownMenuItem
-                                                                    onClick={() => handleDelete(auth)}
+                                                                    onClick={() => handleDelete(order)}
                                                                     className="text-red-600 focus:text-red-600"
                                                                 >
                                                                     <Trash className="mr-2 h-4 w-4" /> Eliminar
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {auth.status === 'approved' && (
+                                                            {order.status === 'approved' && (
                                                                 <>
                                                                     <DropdownMenuSeparator />
                                                                     <DropdownMenuItem onClick={async () => {
-                                                                        const { generateAuthorizationPDF } = await import("@/lib/generate-authorization-pdf")
-                                                                        generateAuthorizationPDF(auth)
+                                                                        const { generatePaymentOrderPDF } = await import("@/lib/generate-payment-order-pdf")
+                                                                        generatePaymentOrderPDF(order)
                                                                     }}>
                                                                         <Download className="mr-2 h-4 w-4" /> Descargar PDF
                                                                     </DropdownMenuItem>
@@ -406,28 +406,28 @@ export function AuthorizationsClient({ initialAuthorizations, canManage, isAdmin
                 </div>
             </Card>
 
-            <AddAuthorizationModal
+            <AddPaymentOrderModal
                 open={modalOpen}
                 onOpenChange={setModalOpen}
-                authorizationToEdit={editingAuth}
+                orderToEdit={editingOrder}
             />
 
-            <PaymentDetailsModal
+            <PaymentOrderDetailsModal
                 open={detailsModalOpen}
                 onOpenChange={setDetailsModalOpen}
-                authorization={selectedAuth}
+                order={selectedOrder}
                 canManage={canManage}
                 onApprove={(id) => handleStatusChange(id, "approved")}
                 onReject={(id) => handleStatusChange(id, "rejected")}
                 onRectify={handleEdit}
             />
 
-            <AlertDialog open={!!deletingAuth} onOpenChange={(open) => !open && setDeletingAuth(null)}>
+            <AlertDialog open={!!deletingOrder} onOpenChange={(open) => !open && setDeletingOrder(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Esto eliminará permanentemente la autorización de pago.
+                            Esta acción no se puede deshacer. Esto eliminará permanentemente la orden de pago.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

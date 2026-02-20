@@ -79,7 +79,7 @@ export interface Category {
   created_at?: string
 }
 
-export interface Authorization {
+export interface PaymentOrder {
   id: string
   description: string
   amount: number
@@ -100,6 +100,18 @@ export interface Authorization {
   is_rectified?: boolean
 }
 
+export interface Bank {
+  id: string
+  bank_name: string
+  account_holder: string
+  document_type: string
+  document_number: string
+  email: string
+  phone_number: string
+  created_at?: string
+  updated_at?: string
+}
+
 export interface UserPermission {
   id: string
   email: string
@@ -108,9 +120,10 @@ export interface UserPermission {
   access_staff: boolean
   access_payroll: boolean
   access_reports: boolean
-  access_authorizations: boolean
+  access_payment_orders: boolean
   access_categories: boolean
-  manage_authorizations: boolean
+  access_banks: boolean
+  manage_payment_orders: boolean
   assign_access: boolean
   created_at?: string
   updated_at?: string

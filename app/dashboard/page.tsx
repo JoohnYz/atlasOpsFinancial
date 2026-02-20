@@ -9,10 +9,10 @@ import {
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { CRMLayout } from "@/components/crm-layout"
-import { getExpenses, getIncomes, getStaff, calculateMonthlyBalance, getCategories, getAuthorizations } from "@/lib/data.server"
+import { getExpenses, getIncomes, getStaff, calculateMonthlyBalance, getCategories, getPaymentOrders } from "@/lib/data.server"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { RecentTransactions } from "@/components/recent-transactions"
-import { AuthorizationsWidget } from "@/components/authorizations-widget"
+import { PaymentOrdersWidget } from "@/components/payment-orders-widget"
 import { createClient } from "@/lib/supabase/server"
 import { getUserPermissions } from "@/lib/permission-actions"
 
@@ -71,19 +71,19 @@ function groupExpensesByCategory(
 
 export default async function Dashboard() {
   const balanceData = await calculateMonthlyBalance()
-  const { balance, percentageChange, isIncrease, totalIncome, totalExpenses, totalPayroll, pendingPayrollCount } = balanceData
+  const { balance, overallBalance, percentageChange, isIncrease, totalIncome, totalExpenses, totalPayroll, pendingPayrollCount } = balanceData
 
   const expenses = await getExpenses()
   const incomes = await getIncomes()
   const staff = await getStaff()
   const categories = await getCategories()
-  const authorizations = await getAuthorizations()
+  const paymentOrders = await getPaymentOrders()
 
   const supabase = await createClient()
   const { data: userData } = await supabase.auth.getUser()
   const user = userData?.user
   const permissions = user?.email ? await getUserPermissions(user.email) : null
-  const canManageAuthorizations = user?.email === 'admin@atlasops.com' || (permissions?.manage_authorizations ?? false)
+  const canManagePaymentOrders = user?.email === 'admin@atlasops.com' || (permissions?.manage_payment_orders ?? false)
 
   const activeStaff = staff.filter((s) => s.status === "Activo" || s.status === "active").length
   const pendingPayroll = pendingPayrollCount;
@@ -157,7 +157,7 @@ export default async function Dashboard() {
 
   const canAccessIncomes = user?.email === 'admin@atlasops.com' || (permissions?.access_income ?? false)
   const canAccessExpenses = user?.email === 'admin@atlasops.com' || (permissions?.access_expenses ?? false)
-  const canAccessAuthorizations = user?.email === 'admin@atlasops.com' || (permissions?.access_authorizations ?? false)
+  const canAccessPaymentOrders = user?.email === 'admin@atlasops.com' || (permissions?.access_payment_orders ?? false)
   const canAccessReports = user?.email === 'admin@atlasops.com' || (permissions?.access_reports ?? false)
 
   const recentTransactions = [
@@ -172,7 +172,7 @@ export default async function Dashboard() {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <CRMLayout balance={balance} percentageChange={percentageChange} isIncrease={isIncrease}>
+    <CRMLayout balance={overallBalance} percentageChange={percentageChange} isIncrease={isIncrease}>
       <div className="space-y-8">
         <div className="space-y-2">
           <h1 className="text-5xl font-bold tracking-tight text-foreground font-sans">Dashboard</h1>
@@ -212,7 +212,7 @@ export default async function Dashboard() {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div>
                   <p className="text-blue-100 font-medium text-sm tracking-wide">BALANCE GENERAL</p>
-                  <p className="text-5xl font-bold mt-3 font-sans">${balance.toLocaleString()}</p>
+                  <p className="text-5xl font-bold mt-3 font-sans">${overallBalance.toLocaleString()}</p>
                   <p className="text-blue-100 mt-3 flex items-center gap-2 font-medium">
                     {isIncrease ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                     {isIncrease ? "+" : "-"}
@@ -241,15 +241,15 @@ export default async function Dashboard() {
           <DashboardCharts monthlyData={monthlyData} expensesByCategory={expensesByCategory} />
         )}
 
-        <div className={`grid grid-cols-1 ${canAccessAuthorizations ? 'lg:grid-cols-3' : ''} gap-6`}>
+        <div className={`grid grid-cols-1 ${canAccessPaymentOrders ? 'lg:grid-cols-3' : ''} gap-6`}>
           {(canAccessIncomes || canAccessExpenses) && (
-            <div className={canAccessAuthorizations ? "lg:col-span-1" : "col-span-1"}>
+            <div className={canAccessPaymentOrders ? "lg:col-span-1" : "col-span-1"}>
               <RecentTransactions transactions={recentTransactions} />
             </div>
           )}
-          {canAccessAuthorizations && (
+          {canAccessPaymentOrders && (
             <div className="lg:col-span-2">
-              <AuthorizationsWidget authorizations={authorizations} canManage={canManageAuthorizations} />
+              <PaymentOrdersWidget paymentOrders={paymentOrders} canManage={canManagePaymentOrders} />
             </div>
           )}
         </div>

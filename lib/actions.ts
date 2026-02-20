@@ -2,15 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { Authorization } from "./types"
+import { PaymentOrder } from "./types"
 import { getUserPermissions } from "./permission-actions"
 
-export async function getPendingAuthorizations() {
-    console.log("[Actions] getPendingAuthorizations")
+export async function getPendingPaymentOrders() {
+    console.log("[Actions] getPendingPaymentOrders")
     try {
         const supabase = await createClient()
         const { data, error } = await supabase
-            .from("payment_authorizations")
+            .from("payment_orders")
             .select("*")
             .eq("status", "pending")
             .order("date", { ascending: false })
@@ -19,17 +19,17 @@ export async function getPendingAuthorizations() {
 
         return { data }
     } catch (error) {
-        console.error("Error fetching pending authorizations:", error)
-        return { error: "Error al obtener autorizaciones pendientes" }
+        console.error("Error fetching pending payment orders:", error)
+        return { error: "Error al obtener órdenes de pago pendientes" }
     }
 }
 
-export async function getAuthorizationHistory() {
-    console.log("[Actions] getAuthorizationHistory")
+export async function getPaymentOrderHistory() {
+    console.log("[Actions] getPaymentOrderHistory")
     try {
         const supabase = await createClient()
         const { data, error } = await supabase
-            .from("payment_authorizations")
+            .from("payment_orders")
             .select("*")
             .neq("status", "pending")
             .order("date", { ascending: false })
@@ -39,12 +39,12 @@ export async function getAuthorizationHistory() {
 
         return { data }
     } catch (error) {
-        console.error("Error fetching authorization history:", error)
+        console.error("Error fetching payment order history:", error)
         return { error: "Error al obtener el historial" }
     }
 }
 
-export async function createAuthorization(formData: FormData) {
+export async function createPaymentOrder(formData: FormData) {
     try {
         const supabase = await createClient()
 
@@ -69,7 +69,7 @@ export async function createAuthorization(formData: FormData) {
         const user = userData?.user
         const created_by = user?.email || 'unknown'
 
-        const { error } = await supabase.from("payment_authorizations").insert({
+        const { error } = await supabase.from("payment_orders").insert({
             description,
             amount,
             date,
@@ -87,20 +87,20 @@ export async function createAuthorization(formData: FormData) {
         })
 
         if (error) {
-            console.error("Supabase error creating authorization:", error)
+            console.error("Supabase error creating payment order:", error)
             throw error
         }
 
-        revalidatePath("/dashboard/authorizations")
+        revalidatePath("/dashboard/payment-orders")
         return { success: true }
     } catch (error: any) {
-        console.error("Critical error in createAuthorization:", error)
-        return { error: `Error al crear la autorización: ${error.message || "Error desconocido"}` }
+        console.error("Critical error in createPaymentOrder:", error)
+        return { error: `Error al crear la orden de pago: ${error.message || "Error desconocido"}` }
     }
 }
 
-export async function updateAuthorizationStatus(id: string, status: "approved" | "rejected" | "pending") {
-    console.log(`[Actions] START updateAuthorizationStatus: id=${id}, status=${status}`)
+export async function updatePaymentOrderStatus(id: string, status: "approved" | "rejected" | "pending") {
+    console.log(`[Actions] START updatePaymentOrderStatus: id=${id}, status=${status}`)
     try {
         const supabase = await createClient()
 
@@ -121,18 +121,18 @@ export async function updateAuthorizationStatus(id: string, status: "approved" |
 
         console.log(`[Actions] User identified: ${user.email}`)
         const permissions = await getUserPermissions(user.email)
-        const canManage = user.email === 'admin@atlasops.com' || (permissions?.manage_authorizations ?? false)
+        const canManage = user.email === 'admin@atlasops.com' || (permissions?.manage_payment_orders ?? false)
 
-        console.log(`[Actions] canManage check: ${canManage} (admin=${user.email === 'admin@atlasops.com'}, perm=${permissions?.manage_authorizations})`)
+        console.log(`[Actions] canManage check: ${canManage} (admin=${user.email === 'admin@atlasops.com'}, perm=${permissions?.manage_payment_orders})`)
 
         if (!canManage) {
-            console.warn(`[Actions] Forbidden: User ${user.email} lacks manage_authorizations`)
-            return { error: "No tienes permiso para gestionar autorizaciones" }
+            console.warn(`[Actions] Forbidden: User ${user.email} lacks manage_payment_orders`)
+            return { error: "No tienes permiso para gestionar órdenes de pago" }
         }
 
         console.log(`[Actions] Proceeding with DB update for id=${id}`)
         const { error: dbError } = await supabase
-            .from("payment_authorizations")
+            .from("payment_orders")
             .update({
                 status,
                 updated_at: new Date().toISOString()
@@ -145,16 +145,16 @@ export async function updateAuthorizationStatus(id: string, status: "approved" |
         }
 
         console.log(`[Actions] SUCCESS updated ${id} to ${status}`)
-        revalidatePath("/dashboard/authorizations")
+        revalidatePath("/dashboard/payment-orders")
         revalidatePath("/dashboard")
         return { success: true }
     } catch (err: any) {
-        console.error("[Actions] UNEXPECTED ERROR in updateAuthorizationStatus:", err)
+        console.error("[Actions] UNEXPECTED ERROR in updatePaymentOrderStatus:", err)
         return { error: `Error inesperado: ${err.message || "Error desconocido"}` }
     }
 }
 
-export async function updateAuthorization(id: string, formData: FormData) {
+export async function updatePaymentOrder(id: string, formData: FormData) {
     try {
         const supabase = await createClient()
 
@@ -177,14 +177,14 @@ export async function updateAuthorization(id: string, formData: FormData) {
 
         // Fetch current record to check status
         const { data: currentAuth, error: fetchError } = await supabase
-            .from("payment_authorizations")
+            .from("payment_orders")
             .select("status")
             .eq("id", id)
             .single()
 
         if (fetchError) {
-            console.error("Error fetching current authorization:", fetchError)
-            return { error: "Error al verificar la autorización actual" }
+            console.error("Error fetching current payment order:", fetchError)
+            return { error: "Error al verificar la orden de pago actual" }
         }
 
         const updateData: any = {
@@ -210,47 +210,47 @@ export async function updateAuthorization(id: string, formData: FormData) {
         }
 
         const { error } = await supabase
-            .from("payment_authorizations")
+            .from("payment_orders")
             .update(updateData)
             .eq('id', id)
 
         if (error) {
-            console.error("Supabase error updating authorization:", error)
+            console.error("Supabase error updating payment order:", error)
             throw error
         }
 
-        revalidatePath("/dashboard/authorizations")
+        revalidatePath("/dashboard/payment-orders")
         return { success: true }
     } catch (error: any) {
-        console.error("Critical error in updateAuthorization:", error)
-        return { error: `Error al actualizar la autorización: ${error.message || "Error desconocido"}` }
+        console.error("Critical error in updatePaymentOrder:", error)
+        return { error: `Error al actualizar la orden de pago: ${error.message || "Error desconocido"}` }
     }
 }
 
-export async function deleteAuthorization(id: string) {
+export async function deletePaymentOrder(id: string) {
     try {
         const supabase = await createClient()
 
-        // SECURITY: Only super-admin can delete authorizations
+        // SECURITY: Only super-admin can delete payment orders
         const { data: userData } = await supabase.auth.getUser()
         const user = userData?.user
         if (!user?.email) return { error: "No autenticado" }
 
         if (user.email !== 'admin@atlasops.com') {
-            return { error: "Solo el administrador principal puede eliminar autorizaciones" }
+            return { error: "Solo el administrador principal puede eliminar órdenes de pago" }
         }
 
         const { error } = await supabase
-            .from("payment_authorizations")
+            .from("payment_orders")
             .delete()
             .eq("id", id)
 
         if (error) throw error
 
-        revalidatePath("/dashboard/authorizations")
+        revalidatePath("/dashboard/payment-orders")
         return { success: true }
     } catch (error) {
-        console.error("Error deleting authorization:", error)
-        return { error: "Error al eliminar la autorización" }
+        console.error("Error deleting payment order:", error)
+        return { error: "Error al eliminar la orden de pago" }
     }
 }

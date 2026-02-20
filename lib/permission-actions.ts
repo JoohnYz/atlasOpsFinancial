@@ -21,9 +21,10 @@ export async function getUserPermissions(email: string): Promise<UserPermission 
             access_staff: true,
             access_payroll: true,
             access_reports: true,
-            access_authorizations: true,
+            access_payment_orders: true,
             access_categories: true,
-            manage_authorizations: true,
+            access_banks: true,
+            manage_payment_orders: true,
             assign_access: true,
         }
     }
@@ -107,9 +108,9 @@ export async function updateUserPermissions(permission: Partial<UserPermission> 
         return { success: true }
     } catch (error: any) {
         console.error("Error updating user permissions:", error)
-        if (error.code === 'PGRST204' || error.message?.includes('manage_authorizations')) {
+        if (error.code === 'PGRST204' || error.message?.includes('manage_payment_orders')) {
             return {
-                error: "La base de datos no ha sido actualizada. Por favor, ejecuta el script de migración SQL (007-add-manage-authorizations-permission.sql)."
+                error: "La base de datos no ha sido actualizada. Por favor, ejecuta el script de migración SQL (011-rename-authorizations-to-payment-orders.sql)."
             }
         }
         return { error: `Error al actualizar permisos: ${error.message}` }

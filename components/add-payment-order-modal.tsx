@@ -24,9 +24,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { createAuthorization, updateAuthorization } from "@/lib/actions"
+import { createPaymentOrder, updatePaymentOrder } from "@/lib/actions"
 import { toast } from "sonner"
-import { Authorization } from "@/lib/types"
+import { PaymentOrder } from "@/lib/types"
 import { CategorySelect } from "@/components/category-select"
 
 const formSchema = z.object({
@@ -122,13 +122,13 @@ const formSchema = z.object({
     }
 })
 
-interface AddAuthorizationModalProps {
+interface AddPaymentOrderModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    authorizationToEdit?: Authorization | null
+    orderToEdit?: PaymentOrder | null
 }
 
-export function AddAuthorizationModal({ open, onOpenChange, authorizationToEdit }: AddAuthorizationModalProps) {
+export function AddPaymentOrderModal({ open, onOpenChange, orderToEdit }: AddPaymentOrderModalProps) {
     const [isPending, setIsPending] = useState(false)
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
@@ -155,20 +155,20 @@ export function AddAuthorizationModal({ open, onOpenChange, authorizationToEdit 
     // Reset form when modal opens/closes or edit item changes
     useEffect(() => {
         if (open) {
-            if (authorizationToEdit) {
+            if (orderToEdit) {
                 form.reset({
-                    description: authorizationToEdit.description,
-                    amount: authorizationToEdit.amount.toString(),
-                    date: new Date(authorizationToEdit.date),
-                    payment_method: authorizationToEdit.payment_method,
-                    bank_name: authorizationToEdit.bank_name || "",
-                    phone_number: authorizationToEdit.phone_number || "",
-                    document_type: authorizationToEdit.document_type || "",
-                    document_number: authorizationToEdit.document_number || "",
-                    currency: authorizationToEdit.currency || "USD",
-                    account_number: authorizationToEdit.account_number || "",
-                    email: authorizationToEdit.email || "",
-                    category: authorizationToEdit.category || "other",
+                    description: orderToEdit.description,
+                    amount: orderToEdit.amount.toString(),
+                    date: new Date(orderToEdit.date),
+                    payment_method: orderToEdit.payment_method,
+                    bank_name: orderToEdit.bank_name || "",
+                    phone_number: orderToEdit.phone_number || "",
+                    document_type: orderToEdit.document_type || "",
+                    document_number: orderToEdit.document_number || "",
+                    currency: orderToEdit.currency || "USD",
+                    account_number: orderToEdit.account_number || "",
+                    email: orderToEdit.email || "",
+                    category: orderToEdit.category || "other",
                 })
             } else {
                 form.reset({
@@ -187,7 +187,7 @@ export function AddAuthorizationModal({ open, onOpenChange, authorizationToEdit 
                 })
             }
         }
-    }, [open, authorizationToEdit, form])
+    }, [open, orderToEdit, form])
 
     // Enforce currency based on payment method
     useEffect(() => {
@@ -226,16 +226,16 @@ export function AddAuthorizationModal({ open, onOpenChange, authorizationToEdit 
             }
 
             let result
-            if (authorizationToEdit) {
-                result = await updateAuthorization(authorizationToEdit.id, formData)
+            if (orderToEdit) {
+                result = await updatePaymentOrder(orderToEdit.id, formData)
             } else {
-                result = await createAuthorization(formData)
+                result = await createPaymentOrder(formData)
             }
 
             if (result.error) {
                 toast.error(result.error)
             } else {
-                toast.success(authorizationToEdit ? "Autorización actualizada" : "Autorización creada correctamente")
+                toast.success(orderToEdit ? "Orden de pago actualizada" : "Orden de pago creada correctamente")
                 onOpenChange(false)
             }
         } catch (error) {
@@ -249,9 +249,9 @@ export function AddAuthorizationModal({ open, onOpenChange, authorizationToEdit 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{authorizationToEdit ? "Editar Pago" : "Agregar Nuevo Pago"}</DialogTitle>
+                    <DialogTitle>{orderToEdit ? "Editar Orden de Pago" : "Nueva Orden de Pago"}</DialogTitle>
                     <DialogDescription>
-                        {authorizationToEdit ? "Edita los detalles del pago." : "Ingresa los detalles del pago a autorizar."}
+                        {orderToEdit ? "Edita los detalles de la orden." : "Ingresa los detalles para crear una orden de pago."}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -550,7 +550,7 @@ export function AddAuthorizationModal({ open, onOpenChange, authorizationToEdit 
                             </Button>
                             <Button type="submit" disabled={isPending}>
                                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {authorizationToEdit ? "Guardar Cambios" : "Guardar Pago"}
+                                {orderToEdit ? "Guardar Cambios" : "Guardar Orden"}
                             </Button>
                         </DialogFooter>
                     </form>
