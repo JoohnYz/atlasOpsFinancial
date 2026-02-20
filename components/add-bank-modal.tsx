@@ -17,6 +17,13 @@ import {
 import { toast } from "sonner"
 import type { Bank } from "@/lib/types"
 import { createBank, updateBank } from "@/lib/bank-actions"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 interface AddBankModalProps {
     onBankAdded?: () => void
@@ -181,14 +188,22 @@ export function AddBankModal({
                             <Label htmlFor="documentType" className="text-foreground">
                                 Tipo de documento
                             </Label>
-                            <Input
-                                id="documentType"
-                                placeholder="Tipo de documento"
+                            <Select
                                 value={documentType}
-                                onChange={(e) => setDocumentType(e.target.value)}
-                                className="bg-secondary border-border text-foreground"
-                                required
-                            />
+                                onValueChange={setDocumentType}
+                            >
+                                <SelectTrigger id="documentType" className="bg-secondary border-border text-foreground">
+                                    <SelectValue placeholder="Seleccione" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-border">
+                                    <SelectItem value="V">V</SelectItem>
+                                    <SelectItem value="E">E</SelectItem>
+                                    <SelectItem value="J">J</SelectItem>
+                                    <SelectItem value="G">G</SelectItem>
+                                    <SelectItem value="R">R</SelectItem>
+                                    <SelectItem value="P">P</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="documentNumber" className="text-foreground">
