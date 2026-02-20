@@ -843,16 +843,18 @@ export default function SettingsPage() {
               <AlertDialogTitle className="text-foreground text-xl font-bold">
                 ¿Está seguro que quiere eliminar "{categoryToDelete?.name}"?
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-muted-foreground space-y-3">
-                <p>Esta acción no se puede deshacer de forma sencilla.</p>
-                {categoryToDelete && getTransactionCount(categoryToDelete.name) > 0 && (
-                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive font-medium">
-                    <p className="text-sm">
-                      ⚠️ <strong>Aviso importante:</strong> Esta categoría tiene {getTransactionCount(categoryToDelete.name)} transacciones asociadas.
-                      Si elimina la categoría, <strong>se eliminarán también todas las transacciones</strong> que tenga de forma automática.
-                    </p>
-                  </div>
-                )}
+              <AlertDialogDescription asChild className="text-muted-foreground space-y-3">
+                <div>
+                  <p>Esta acción no se puede deshacer de forma sencilla.</p>
+                  {categoryToDelete && getTransactionCount(categoryToDelete.name) > 0 && (
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive font-medium">
+                      <p className="text-sm">
+                        ⚠️ <strong>Aviso importante:</strong> Esta categoría tiene {getTransactionCount(categoryToDelete.name)} transacciones asociadas.
+                        Si elimina la categoría, <strong>se eliminarán también todas las transacciones</strong> que tenga de forma automática.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="mt-6 gap-3">
