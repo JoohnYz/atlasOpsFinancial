@@ -10,7 +10,8 @@ import { BankCard } from "@/components/bank-card"
 import { PermissionGuard } from "@/components/permission-guard"
 import { createClient } from "@/lib/supabase/client"
 import { deleteBank } from "@/lib/bank-actions"
-import type { Bank } from "@/lib/types"
+import { getUserPermissions } from "@/lib/permission-actions"
+import type { Bank, UserPermission } from "@/lib/types"
 import { toast } from "sonner"
 import { useRealtime } from "@/hooks/use-realtime"
 import {
@@ -31,10 +32,21 @@ export default function BanksPage() {
     const [bankToEdit, setBankToEdit] = useState<Bank | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
     const [bankToDelete, setBankToDelete] = useState<Bank | null>(null)
+    const [permissions, setPermissions] = useState<UserPermission | null>(null)
+
+    const canManage = permissions?.manage_banks ?? false
 
     const fetchBanks = useCallback(async () => {
         try {
             const supabase = createClient()
+
+            // Fetch current user permissions
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user?.email) {
+                const perms = await getUserPermissions(user.email)
+                setPermissions(perms)
+            }
+
             const { data, error } = await supabase
                 .from("banks")
                 .select("*")
@@ -121,16 +133,18 @@ export default function BanksPage() {
                                 bankToEdit={bankToEdit}
                                 mode={bankToEdit ? "edit" : "add"}
                             />
-                            <Button
-                                onClick={() => {
-                                    setBankToEdit(null)
-                                    setModalOpen(true)
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Agregar Cuenta
-                            </Button>
+                            {canManage && (
+                                <Button
+                                    onClick={() => {
+                                        setBankToEdit(null)
+                                        setModalOpen(true)
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Agregar Cuenta
+                                </Button>
+                            )}
                         </div>
                     </div>
 
@@ -168,6 +182,7 @@ export default function BanksPage() {
                                     bank={bank}
                                     onEdit={handleEdit}
                                     onDelete={handleDeleteClick}
+                                    canManage={canManage}
                                 />
                             ))}
                         </div>

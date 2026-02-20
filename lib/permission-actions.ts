@@ -25,6 +25,7 @@ export async function getUserPermissions(email: string): Promise<UserPermission 
             access_categories: true,
             access_banks: true,
             manage_payment_orders: true,
+            manage_banks: true,
             assign_access: true,
         }
     }

@@ -673,6 +673,7 @@ export default function SettingsPage() {
                           access_categories: false,
                           access_banks: false,
                           manage_payment_orders: false,
+                          manage_banks: false,
                           assign_access: false
                         })}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
@@ -716,6 +717,7 @@ export default function SettingsPage() {
                               { id: 'access_categories', label: 'Categorías' },
                               { id: 'access_banks', label: 'Bancos' },
                               { id: 'manage_payment_orders', label: 'Gestionar Órdenes de pago' },
+                              { id: 'manage_banks', label: 'Gestión de Cuentas Bancarias' },
                               { id: 'assign_access', label: 'Asignar Accesos' },
                             ].map((perm) => (
                               <div key={perm.id} className="flex items-center justify-between">
@@ -766,6 +768,7 @@ export default function SettingsPage() {
                               {permission.access_payment_orders && <Badge variant="secondary" className="text-[10px] py-0">Ordenes</Badge>}
                               {permission.access_categories && <Badge variant="secondary" className="text-[10px] py-0">Categorías</Badge>}
                               {permission.manage_payment_orders && <Badge variant="secondary" className="text-[10px] py-0">Gestionar Órdenes</Badge>}
+                              {permission.manage_banks && <Badge variant="secondary" className="text-[10px] py-0">Gestión Bancos</Badge>}
                               {permission.assign_access && <Badge variant="default" className="text-[10px] py-0 bg-blue-600">Asignar Accesos</Badge>}
                             </div>
                           </div>

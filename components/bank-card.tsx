@@ -17,9 +17,10 @@ interface BankCardProps {
     bank: Bank
     onEdit: (bank: Bank) => void
     onDelete: (bank: Bank) => void
+    canManage?: boolean
 }
 
-export function BankCard({ bank, onEdit, onDelete }: BankCardProps) {
+export function BankCard({ bank, onEdit, onDelete, canManage = true }: BankCardProps) {
     return (
         <Card className="overflow-hidden hover:shadow-md transition-shadow bg-card border-border">
             <CardContent className="p-0">
@@ -28,27 +29,29 @@ export function BankCard({ bank, onEdit, onDelete }: BankCardProps) {
                         <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50">
                             <Landmark className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Abrir menú</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => onEdit(bank)}>
-                                    <Pencil className="mr-2 h-4 w-4" /> Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={() => onDelete(bank)}
-                                    className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
-                                >
-                                    <Trash className="mr-2 h-4 w-4" /> Eliminar
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {canManage && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Abrir menú</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => onEdit(bank)}>
+                                        <Pencil className="mr-2 h-4 w-4" /> Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => onDelete(bank)}
+                                        className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                    >
+                                        <Trash className="mr-2 h-4 w-4" /> Eliminar
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
 
                     <div className="space-y-3">

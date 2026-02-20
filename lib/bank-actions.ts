@@ -3,10 +3,21 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { Bank } from "./types"
+import { getUserPermissions } from "./permission-actions"
 
 export async function createBank(formData: FormData) {
     try {
         const supabase = await createClient()
+
+        // Check permissions
+        const { data: userData } = await supabase.auth.getUser()
+        const user = userData?.user
+        if (!user?.email) return { error: "No autenticado" }
+
+        const perms = await getUserPermissions(user.email)
+        if (!perms?.manage_banks) {
+            return { error: "No tienes permisos para gestionar cuentas bancarias" }
+        }
 
         const bank_name = formData.get("bank_name") as string
         const account_holder = formData.get("account_holder") as string
@@ -65,6 +76,16 @@ export async function createBank(formData: FormData) {
 export async function updateBank(id: string, formData: FormData) {
     try {
         const supabase = await createClient()
+
+        // Check permissions
+        const { data: userData } = await supabase.auth.getUser()
+        const user = userData?.user
+        if (!user?.email) return { error: "No autenticado" }
+
+        const perms = await getUserPermissions(user.email)
+        if (!perms?.manage_banks) {
+            return { error: "No tienes permisos para gestionar cuentas bancarias" }
+        }
 
         const bank_name = formData.get("bank_name") as string
         const account_holder = formData.get("account_holder") as string
@@ -128,6 +149,16 @@ export async function updateBank(id: string, formData: FormData) {
 export async function deleteBank(id: string) {
     try {
         const supabase = await createClient()
+
+        // Check permissions
+        const { data: userData } = await supabase.auth.getUser()
+        const user = userData?.user
+        if (!user?.email) return { error: "No autenticado" }
+
+        const perms = await getUserPermissions(user.email)
+        if (!perms?.manage_banks) {
+            return { error: "No tienes permisos para gestionar cuentas bancarias" }
+        }
 
         const { error } = await supabase
             .from("banks")
