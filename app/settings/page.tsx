@@ -25,6 +25,16 @@ import { createClient } from "@/lib/supabase/client"
 import { detectEmoji, EMOJI_OPTIONS } from "@/lib/emoji-utils"
 import type { Expense, UserPermission } from "@/lib/types"
 import { getAllUserPermissions, updateUserPermissions, deleteUserPermissions, getUserPermissions } from "@/lib/permission-actions"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 
 interface Category {
@@ -47,6 +57,7 @@ export default function SettingsPage() {
   const [editEmoji, setEditEmoji] = useState("")
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
   const [loading, setLoading] = useState(false)
   const [notifications, setNotifications] = useState({
     email: true,
@@ -312,22 +323,38 @@ export default function SettingsPage() {
   }
 
   // Delete category
-  const handleDeleteCategory = async (id: string) => {
+  const handleDeleteCategory = async (id: string, name: string) => {
     setLoading(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase
+
+      // 1. Delete associated expenses
+      const { error: expError } = await supabase
+        .from("expenses")
+        .delete()
+        .eq("category", name)
+
+      if (expError) throw expError
+
+      // 2. Delete the category itself
+      const { error: catError } = await supabase
         .from("categories")
         .delete()
         .eq("id", id)
 
-      if (error) throw error
+      if (catError) throw catError
 
+      // 3. Update local state
       setCategories(categories.filter((cat) => cat.id !== id))
-    } catch (err) {
+      setExpenses(expenses.filter((exp) => exp.category !== name))
+
+      toast.success(`Categoría "${name}" y sus transacciones eliminadas`)
+    } catch (err: any) {
       console.error("Error deleting category:", err)
+      toast.error(`Error al eliminar: ${err.message}`)
     } finally {
       setLoading(false)
+      setCategoryToDelete(null)
     }
   }
 
@@ -515,7 +542,7 @@ export default function SettingsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteCategory(category.id)}
+                            onClick={() => setCategoryToDelete(category)}
                             disabled={loading}
                             className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                           >
@@ -808,6 +835,39 @@ export default function SettingsPage() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Global AlertDialog for Category Deletion */}
+        <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-foreground text-xl font-bold">
+                ¿Está seguro que quiere eliminar "{categoryToDelete?.name}"?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground space-y-3">
+                <p>Esta acción no se puede deshacer de forma sencilla.</p>
+                {categoryToDelete && getTransactionCount(categoryToDelete.name) > 0 && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive font-medium">
+                    <p className="text-sm">
+                      ⚠️ <strong>Aviso importante:</strong> Esta categoría tiene {getTransactionCount(categoryToDelete.name)} transacciones asociadas.
+                      Si elimina la categoría, <strong>se eliminarán también todas las transacciones</strong> que tenga de forma automática.
+                    </p>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-6 gap-3">
+              <AlertDialogCancel className="border-border bg-transparent">Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => categoryToDelete && handleDeleteCategory(categoryToDelete.id, categoryToDelete.name)}
+                className="bg-red-600 hover:bg-red-700 text-white border-0"
+              >
+                {categoryToDelete && getTransactionCount(categoryToDelete.name) > 0
+                  ? "Eliminar todo"
+                  : "Eliminar categoría"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </CRMLayout>
   )
