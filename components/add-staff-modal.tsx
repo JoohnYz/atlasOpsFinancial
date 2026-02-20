@@ -58,7 +58,7 @@ export function AddStaffModal({ onStaffAdded, editStaff, open: controlledOpen, o
 
     try {
       const supabase = createClient()
-      
+
       const staffData = {
         name,
         email,
@@ -70,6 +70,29 @@ export function AddStaffModal({ onStaffAdded, editStaff, open: controlledOpen, o
       }
 
       if (mode === "edit" && editStaff) {
+        // Check for duplicates excluding current record
+        const { data: duplicateEmail } = await supabase
+          .from("employees")
+          .select("id")
+          .ilike("email", email)
+          .neq("id", editStaff.id)
+          .maybeSingle()
+
+        if (duplicateEmail) {
+          throw new Error("Ya existe un empleado con este correo electrónico")
+        }
+
+        const { data: duplicateName } = await supabase
+          .from("employees")
+          .select("id")
+          .ilike("name", name)
+          .neq("id", editStaff.id)
+          .maybeSingle()
+
+        if (duplicateName) {
+          throw new Error("Ya existe un empleado con este nombre")
+        }
+
         const { error: updateError } = await supabase
           .from("employees")
           .update(staffData)
@@ -77,6 +100,27 @@ export function AddStaffModal({ onStaffAdded, editStaff, open: controlledOpen, o
 
         if (updateError) throw updateError
       } else {
+        // Check for duplicates
+        const { data: duplicateEmail } = await supabase
+          .from("employees")
+          .select("id")
+          .ilike("email", email)
+          .maybeSingle()
+
+        if (duplicateEmail) {
+          throw new Error("Ya existe un empleado con este correo electrónico")
+        }
+
+        const { data: duplicateName } = await supabase
+          .from("employees")
+          .select("id")
+          .ilike("name", name)
+          .maybeSingle()
+
+        if (duplicateName) {
+          throw new Error("Ya existe un empleado con este nombre")
+        }
+
         const { error: insertError } = await supabase
           .from("employees")
           .insert([staffData])
@@ -129,7 +173,7 @@ export function AddStaffModal({ onStaffAdded, editStaff, open: controlledOpen, o
             {isEditMode ? "Editar Empleado" : "Agregar Nuevo Empleado"}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {isEditMode 
+            {isEditMode
               ? "Modifica los datos del empleado."
               : "Ingresa los datos del nuevo miembro del equipo."
             }
@@ -222,8 +266,8 @@ export function AddStaffModal({ onStaffAdded, editStaff, open: controlledOpen, o
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="border-border bg-transparent">
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
               disabled={loading}
             >
