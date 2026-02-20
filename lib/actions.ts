@@ -69,6 +69,26 @@ export async function createPaymentOrder(formData: FormData) {
         const user = userData?.user
         const created_by = user?.email || 'unknown'
 
+        // --- Duplicate Check ---
+        let duplicateQuery = supabase.from("payment_orders").select("id")
+            .eq("description", description)
+            .eq("amount", amount)
+            .eq("date", date)
+            .eq("payment_method", payment_method)
+            .eq("currency", currency)
+
+        if (bank_name) duplicateQuery = duplicateQuery.ilike("bank_name", bank_name)
+        if (phone_number) duplicateQuery = duplicateQuery.eq("phone_number", phone_number)
+        if (account_number) duplicateQuery = duplicateQuery.eq("account_number", account_number)
+        if (document_number) duplicateQuery = duplicateQuery.eq("document_number", document_number)
+        if (email) duplicateQuery = duplicateQuery.ilike("email", email)
+
+        const { data: existingOrder } = await duplicateQuery.maybeSingle()
+        if (existingOrder) {
+            return { error: "Ya existe una orden de pago con estos mismos datos (Descripción, Monto, Fecha y Detalles)" }
+        }
+        // ------------------------
+
         const { error } = await supabase.from("payment_orders").insert({
             description,
             amount,
@@ -174,6 +194,27 @@ export async function updatePaymentOrder(id: string, formData: FormData) {
         if (!description || isNaN(amount) || !date || !payment_method) {
             return { error: "Faltan datos requeridos" }
         }
+
+        // --- Duplicate Check ---
+        let duplicateQuery = supabase.from("payment_orders").select("id")
+            .eq("description", description)
+            .eq("amount", amount)
+            .eq("date", date)
+            .eq("payment_method", payment_method)
+            .eq("currency", currency)
+            .neq("id", id) // Exclude current record
+
+        if (bank_name) duplicateQuery = duplicateQuery.ilike("bank_name", bank_name)
+        if (phone_number) duplicateQuery = duplicateQuery.eq("phone_number", phone_number)
+        if (account_number) duplicateQuery = duplicateQuery.eq("account_number", account_number)
+        if (document_number) duplicateQuery = duplicateQuery.eq("document_number", document_number)
+        if (email) duplicateQuery = duplicateQuery.ilike("email", email)
+
+        const { data: existingOrder } = await duplicateQuery.maybeSingle()
+        if (existingOrder) {
+            return { error: "Ya existe otra orden de pago con estos mismos datos (Descripción, Monto, Fecha y Detalles)" }
+        }
+        // ------------------------
 
         // Fetch current record to check status
         const { data: currentAuth, error: fetchError } = await supabase
