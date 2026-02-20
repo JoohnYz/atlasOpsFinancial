@@ -36,12 +36,14 @@ export default function BanksPage() {
 
     const canManage = permissions?.manage_banks ?? false
 
+
     const fetchBanks = useCallback(async () => {
         try {
             const supabase = createClient()
 
             // Fetch current user permissions
-            const { data: { user } } = await supabase.auth.getUser()
+            const { data: authData } = await supabase.auth.getUser()
+            const user = authData?.user
             if (user?.email) {
                 const perms = await getUserPermissions(user.email)
                 setPermissions(perms)

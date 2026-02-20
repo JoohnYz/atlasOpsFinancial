@@ -109,9 +109,14 @@ export async function updateUserPermissions(permission: Partial<UserPermission> 
         return { success: true }
     } catch (error: any) {
         console.error("Error updating user permissions:", error)
-        if (error.code === 'PGRST204' || error.message?.includes('manage_payment_orders')) {
+        if (
+            error.code === 'PGRST204' ||
+            error.code === '42703' || // Undefined column
+            error.message?.includes('manage_payment_orders') ||
+            error.message?.includes('manage_banks')
+        ) {
             return {
-                error: "La base de datos no ha sido actualizada. Por favor, ejecuta el script de migración SQL (011-rename-authorizations-to-payment-orders.sql)."
+                error: "La base de datos no ha sido actualizada. Por favor, ejecuta el script de migración SQL correspondiente (011 o 013) en Supabase."
             }
         }
         return { error: `Error al actualizar permisos: ${error.message}` }
