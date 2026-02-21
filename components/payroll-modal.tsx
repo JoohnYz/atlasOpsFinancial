@@ -48,6 +48,24 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!selectedStaff) {
+      toast.error("Debe seleccionar un empleado antes de procesar el pago.")
+      return
+    }
+    if (!period) {
+      toast.error("Debe seleccionar el período de pago.")
+      return
+    }
+    if (!date) {
+      toast.error("Debe ingresar la fecha de pago.")
+      return
+    }
+    if (!amount || Number.parseFloat(amount) <= 0) {
+      toast.error("Debe ingresar un monto válido mayor a 0.")
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -64,7 +82,8 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
       })
 
       if (!result.success) {
-        throw new Error(result.error)
+        toast.error(result.error || "No se pudo registrar el pago")
+        return
       }
 
       toast.success("Pago de nómina registrado correctamente")
@@ -73,7 +92,7 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
       onPayrollAdded?.()
     } catch (error: any) {
       console.error("[v0] Error adding payroll:", error)
-      toast.error(`Error: ${error.message || "No se pudo registrar el pago"}`)
+      toast.error(error.message || "Ocurrió un error inesperado al procesar el pago")
     } finally {
       setLoading(false)
     }

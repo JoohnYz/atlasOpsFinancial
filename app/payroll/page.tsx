@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, FileText, CheckCircle, Clock, XCircle, Download, MoreHorizontal } from "lucide-react"
+import { Search, FileText, CheckCircle, Clock, XCircle, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CRMLayout } from "@/components/crm-layout"
 import { PayrollModal } from "@/components/payroll-modal"
+import { PayrollDetailsModal } from "@/components/payroll-details-modal"
+import { EditPayrollModal } from "@/components/edit-payroll-modal"
 import { createClient } from "@/lib/supabase/client"
+import { deletePayrollAction } from "@/lib/payroll-actions"
+import { toast } from "sonner"
 import { PermissionGuard } from "@/components/permission-guard"
 import type { PayrollPayment, Staff } from "@/lib/types"
+import type { User as UserType } from "@supabase/supabase-js"
 
 export default function PayrollPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -21,6 +26,9 @@ export default function PayrollPage() {
   const [loading, setLoading] = useState(true)
   const [selectedPayment, setSelectedPayment] = useState<PayrollPayment | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<PayrollPayment | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -35,6 +43,16 @@ export default function PayrollPage() {
 
         if (!staffError && staffData) {
           setStaff(staffData)
+        }
+
+        // Fetch current user
+        try {
+          const { data: authData } = await supabase.auth.getUser()
+          if (authData?.user) {
+            setCurrentUser(authData.user as unknown as UserType)
+          }
+        } catch (authCatch) {
+          console.error("[Payroll] Error fetching user:", authCatch)
         }
 
         // Fetch payroll with employee names
@@ -128,6 +146,9 @@ export default function PayrollPage() {
 
       if (!error) {
         setPayments(payments.map((p) => (p.id === id ? { ...p, status: "Pagado" } : p)))
+        if (selectedPayment?.id === id) {
+          setSelectedPayment({ ...selectedPayment, status: "Pagado" })
+        }
       }
     } catch (error) {
       console.error("[v0] Error marking as paid:", error)
@@ -141,10 +162,38 @@ export default function PayrollPage() {
 
       if (!error) {
         setPayments(payments.map((p) => (p.id === id ? { ...p, status: "Cancelado" } : p)))
+        if (selectedPayment?.id === id) {
+          setSelectedPayment({ ...selectedPayment, status: "Cancelado" })
+        }
       }
     } catch (error) {
       console.error("[v0] Error cancelling payment:", error)
     }
+  }
+
+  const handleDelete = async (payment: PayrollPayment) => {
+    const confirmed = window.confirm(
+      `¿Está seguro de que desea eliminar el pago de nómina de ${payment.staff_name || payment.employee_name || "este empleado"} del período "${payment.period}"? Esta acción no se puede deshacer.`
+    )
+    if (!confirmed) return
+
+    try {
+      const result = await deletePayrollAction(payment.id)
+      if (!result.success) {
+        toast.error(result.error || "No se pudo eliminar el pago")
+        return
+      }
+      setPayments(payments.filter((p) => p.id !== payment.id))
+      toast.success("Pago de nómina eliminado correctamente")
+    } catch (error: any) {
+      console.error("[v0] Error deleting payroll:", error)
+      toast.error("Ocurrió un error al eliminar el pago")
+    }
+  }
+
+  const handleEdit = (payment: PayrollPayment) => {
+    setEditingPayment(payment)
+    setShowEditModal(true)
   }
 
   const handlePayrollAdded = () => {
@@ -315,6 +364,15 @@ export default function PayrollPage() {
                                 </DropdownMenuItem>
                                 {(payment.status === "pending" || payment.status === "Pendiente") && (
                                   <DropdownMenuItem
+                                    className="text-foreground cursor-pointer"
+                                    onClick={() => handleEdit(payment)}
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {(payment.status === "pending" || payment.status === "Pendiente") && (
+                                  <DropdownMenuItem
                                     className="text-emerald-500 cursor-pointer"
                                     onClick={() => handleMarkPaid(payment.id)}
                                   >
@@ -335,6 +393,15 @@ export default function PayrollPage() {
                                     Cancelar Pago
                                   </DropdownMenuItem>
                                 )}
+                                {(payment.status === "pending" || payment.status === "Pendiente" || currentUser?.email === "admin@atlasops.com") && (
+                                  <DropdownMenuItem
+                                    className="text-destructive cursor-pointer"
+                                    onClick={() => handleDelete(payment)}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                    Eliminar pago
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -347,6 +414,25 @@ export default function PayrollPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Payroll Details Modal */}
+        <PayrollDetailsModal
+          payment={selectedPayment}
+          open={showDetailsModal}
+          onOpenChange={setShowDetailsModal}
+          onMarkPaid={handleMarkPaid}
+          onCancel={handleCancel}
+          onEdit={handleEdit}
+        />
+
+        {/* Edit Payroll Modal */}
+        <EditPayrollModal
+          payment={editingPayment}
+          staff={staff}
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          onPayrollUpdated={handlePayrollAdded}
+        />
       </CRMLayout>
     </PermissionGuard>
   )
