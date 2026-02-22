@@ -35,8 +35,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
 
     const knownHistoryIds = useRef<Set<string>>(new Set())
     const knownPendingIds = useRef<Set<string>>(new Set())
-    const isInitialRender = useRef(true)
-    const [isInitialLoad, setIsInitialLoad] = useState(true)
+    const isInitialLoad = useRef(true)
 
     // Helper to get composite key - NOW ID ONLY for v3
     const getSeenKey = (order: PaymentOrder) => order.id
@@ -55,8 +54,8 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
 
     // Update localStorage when seenIds change
     useEffect(() => {
-        if (isInitialRender.current) {
-            isInitialRender.current = false
+        // Use a persistent flag for the very first render skip
+        if (isInitialLoad.current && seenIds.length === 0) {
             return
         }
         localStorage.setItem('seen_notification_ids_v3', JSON.stringify(seenIds))
@@ -69,7 +68,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
             const newPending = result.data as PaymentOrder[]
 
             // Check for new pending payments (only for managers)
-            if (!isInitialLoad && canManage) {
+            if (!isInitialLoad.current && canManage) {
                 newPending.forEach(auth => {
                     if (!knownPendingIds.current.has(auth.id)) {
                         toast(`Nuevo pago registrado para autorizar: ${auth.description}`, {
@@ -88,7 +87,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
             knownPendingIds.current = new Set(newPending.map(a => a.id))
         }
         setLoading(false)
-    }, [isInitialLoad, canManage])
+    }, [canManage])
 
     const fetchHistoryOrders = useCallback(async (isSilent = false) => {
         if (!isSilent) setHistoryLoading(true)
@@ -97,7 +96,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
             const newHistory = result.data as PaymentOrder[]
 
             // Check for status changes (new entries in history)
-            if (!isInitialLoad) {
+            if (!isInitialLoad.current) {
                 newHistory.forEach(auth => {
                     if (!knownHistoryIds.current.has(auth.id)) {
                         // Notify ONLY if they are the creator
@@ -133,18 +132,16 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
 
             setHistoryOrders(newHistory)
             knownHistoryIds.current = new Set(newHistory.map(a => a.id))
-            if (isInitialLoad) {
-                setIsInitialLoad(false)
-            }
+            isInitialLoad.current = false
         }
         if (!isSilent) setHistoryLoading(false)
-    }, [isInitialLoad, currentUserEmail])
+    }, [currentUserEmail])
 
     useEffect(() => {
         if (view === 'history' && open) {
             fetchHistoryOrders()
         }
-    }, [view, open])
+    }, [view, open, fetchHistoryOrders])
 
     const refreshData = useCallback(async () => {
         if (!canAccess) return

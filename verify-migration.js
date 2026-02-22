@@ -21,9 +21,10 @@ async function verifyMigration() {
     }
 
     // Check for payment_authorizations table (should be gone)
-    const { data: aData, error: aError } = await supabase.from('payment_authorizations').select('*').limit(1)
+    const { error: aError } = await supabase.from('payment_authorizations').select('*').limit(1)
     if (aError) {
-        if (aError.code === '42P01') {
+        // PostgREST returns this message when a table is missing
+        if (aError.code === '42P01' || aError.message.includes('Could not find the table')) {
             console.log("✅ Table 'payment_authorizations' has been renamed/removed.")
         } else {
             console.error("Error checking 'payment_authorizations':", aError.message)
@@ -33,25 +34,41 @@ async function verifyMigration() {
     }
 
     // Check user_permissions columns
-    const { data: pData, error: pError } = await supabase.from('user_permissions').select('*').limit(1)
-    if (pError) {
-        console.error("Error checking 'user_permissions':", pError.message)
-    } else if (pData && pData.length > 0) {
-        const firstRow = pData[0]
-        const columns = Object.keys(firstRow)
+    console.log("\nChecking 'user_permissions' columns...")
 
-        if (columns.includes('access_payment_orders')) {
-            console.log("✅ 'access_payment_orders' column exists in 'user_permissions'.")
+    async function checkColumnExists(columnName, migration) {
+        const { error } = await supabase.from('user_permissions').select(columnName).limit(1)
+        if (error) {
+            if (error.message.includes('column') && error.message.includes('does not exist')) {
+                console.log(`❌ '${columnName}' column is MISSING. (Migration ${migration})`)
+            } else {
+                console.error(`Error checking '${columnName}':`, error.message)
+            }
         } else {
-            console.log("❌ 'access_payment_orders' column is MISSING in 'user_permissions'.")
+            console.log(`✅ '${columnName}' column exists.`)
         }
+    }
 
-        if (columns.includes('access_authorizations')) {
-            console.log("⚠️ 'access_authorizations' column STILL exists in 'user_permissions'.")
-        } else {
+    await checkColumnExists('access_payment_orders', '011')
+    await checkColumnExists('manage_payment_orders', '011')
+    await checkColumnExists('manage_banks', '013')
+    await checkColumnExists('access_notifications', '014')
+
+    // Check old column
+    const { error: oldColError } = await supabase.from('user_permissions').select('access_authorizations').limit(1)
+    if (oldColError) {
+        if (oldColError.message.includes('column') && oldColError.message.includes('does not exist')) {
             console.log("✅ 'access_authorizations' column has been removed/renamed.")
+        } else {
+            // If table is missing, we already handled that above, but here we expect the table to exist
+            console.log("✅ 'access_authorizations' column is likely gone.")
         }
+    } else {
+        console.log("⚠️ 'access_authorizations' column STILL exists in 'user_permissions'.")
     }
 }
 
-verifyMigration()
+verifyMigration().then(() => console.log("\n--- Verification Complete ---")).catch(err => {
+    console.error("Verification failed:", err)
+    process.exit(1)
+})

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 /**
@@ -10,7 +10,16 @@ import { createClient } from "@/lib/supabase/client"
  * @param callback The function to call when a change occurs
  */
 export function useRealtime(table: string, callback: () => void) {
+    const callbackRef = useRef(callback)
+
+    // Always update the ref to the latest callback
     useEffect(() => {
+        callbackRef.current = callback
+    }, [callback])
+
+    useEffect(() => {
+        if (!table) return
+
         const supabase = createClient()
 
         // Subscribe to all changes (INSERT, UPDATE, DELETE) on the public schema
@@ -25,7 +34,7 @@ export function useRealtime(table: string, callback: () => void) {
                 },
                 (payload) => {
                     console.log(`[Realtime] Change detected in ${table}:`, payload)
-                    callback()
+                    callbackRef.current()
                 },
             )
             .subscribe((status) => {
@@ -38,5 +47,5 @@ export function useRealtime(table: string, callback: () => void) {
             console.log(`[Realtime] Unsubscribing from changes in ${table}`)
             supabase.removeChannel(channel)
         }
-    }, [table, callback])
+    }, [table]) // Only depend on table name
 }

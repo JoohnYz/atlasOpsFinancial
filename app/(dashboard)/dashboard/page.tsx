@@ -8,7 +8,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
-import { CRMLayout } from "@/components/crm-layout"
 import { getExpenses, getIncomes, getStaff, calculateMonthlyBalance, getCategories, getPaymentOrders } from "@/lib/data.server"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { RecentTransactions } from "@/components/recent-transactions"
@@ -172,107 +171,106 @@ export default async function Dashboard() {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <CRMLayout balance={overallBalance} percentageChange={percentageChange} isIncrease={isIncrease}>
-      <div className="space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-5xl font-bold tracking-tight text-foreground font-sans">Dashboard</h1>
-          <p className="text-lg text-muted-foreground font-medium">Resumen financiero completo de tu empresa</p>
-        </div>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-5xl font-bold tracking-tight text-foreground font-sans">Dashboard</h1>
+        <p className="text-lg text-muted-foreground font-medium">Resumen financiero completo de tu empresa</p>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {metrics.map((metric, index) => (
-            <Link key={index} href={metric.href}>
-              <Card
-                className={`${metric.bg} border-2 ${metric.borderColor} hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer group h-full`}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${metric.bg} border ${metric.borderColor}`}>
-                      <metric.icon className={`w-6 h-6 ${metric.color}`} />
-                    </div>
-                    <span
-                      className={`text-xs font-bold px-3 py-1 rounded-full ${metric.trend === "up" ? "bg-emerald-100/50 text-emerald-700 dark:text-emerald-400" : metric.trend === "down" ? "bg-red-100/50 text-red-700 dark:text-red-400" : "bg-secondary text-muted-foreground"}`}
-                    >
-                      {metric.change}
-                    </span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {metrics.map((metric, index) => (
+          <Link key={index} href={metric.href}>
+            <Card
+              className={`${metric.bg} border-2 ${metric.borderColor} hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer group h-full`}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`p-3 rounded-xl ${metric.bg} border ${metric.borderColor}`}>
+                    <metric.icon className={`w-6 h-6 ${metric.color}`} />
                   </div>
-                  <div>
-                    <p className={`text-3xl font-bold font-sans ${metric.color}`}>{metric.value}</p>
-                    <p className="text-sm text-muted-foreground font-medium mt-1">{metric.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-
-        {canAccessReports && (
-          <Card className="border-0 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 text-white shadow-xl">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                  <span
+                    className={`text-xs font-bold px-3 py-1 rounded-full ${metric.trend === "up" ? "bg-emerald-100/50 text-emerald-700 dark:text-emerald-400" : metric.trend === "down" ? "bg-red-100/50 text-red-700 dark:text-red-400" : "bg-secondary text-muted-foreground"}`}
+                  >
+                    {metric.change}
+                  </span>
+                </div>
                 <div>
-                  <p className="text-blue-100 font-medium text-sm tracking-wide">BALANCE GENERAL</p>
-                  <p className="text-5xl font-bold mt-3 font-sans">${overallBalance.toLocaleString()}</p>
-                  <p className="text-blue-100 mt-3 flex items-center gap-2 font-medium">
-                    {isIncrease ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                    {isIncrease ? "+" : "-"}
-                    {percentageChange}% comparado con el mes anterior
+                  <p className={`text-3xl font-bold font-sans ${metric.color}`}>{metric.value}</p>
+                  <p className="text-sm text-muted-foreground font-medium mt-1">{metric.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      {canAccessReports && (
+        <Card className="border-0 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 text-white shadow-xl">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <p className="text-blue-100 font-medium text-sm tracking-wide">BALANCE GENERAL</p>
+                <p className="text-5xl font-bold mt-3 font-sans">${overallBalance.toLocaleString()}</p>
+                <p className="text-blue-100 mt-3 flex items-center gap-2 font-medium">
+                  {isIncrease ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                  {isIncrease ? "+" : "-"}
+                  {percentageChange}% comparado con el mes anterior
+                </p>
+              </div>
+              <div className="flex gap-8 md:gap-12">
+                <div className="text-center">
+                  <p className="text-blue-100 text-sm font-medium">Ingresos</p>
+                  <p className="text-3xl font-bold mt-2 font-sans">${(totalIncome / 1000).toFixed(0)}k</p>
+                </div>
+                <div className="w-px bg-blue-400/30"></div>
+                <div className="text-center">
+                  <p className="text-blue-100 text-sm font-medium">Egresos</p>
+                  <p className="text-3xl font-bold mt-2 font-sans">
+                    ${((totalExpenses + totalPayroll) / 1000).toFixed(0)}k
                   </p>
                 </div>
-                <div className="flex gap-8 md:gap-12">
-                  <div className="text-center">
-                    <p className="text-blue-100 text-sm font-medium">Ingresos</p>
-                    <p className="text-3xl font-bold mt-2 font-sans">${(totalIncome / 1000).toFixed(0)}k</p>
-                  </div>
-                  <div className="w-px bg-blue-400/30"></div>
-                  <div className="text-center">
-                    <p className="text-blue-100 text-sm font-medium">Egresos</p>
-                    <p className="text-3xl font-bold mt-2 font-sans">
-                      ${((totalExpenses + totalPayroll) / 1000).toFixed(0)}k
-                    </p>
-                  </div>
-                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
+      {(canAccessIncomes || canAccessExpenses) && (
+        <DashboardCharts monthlyData={monthlyData} expensesByCategory={expensesByCategory} />
+      )}
+
+      <div className={`grid grid-cols-1 ${canAccessPaymentOrders ? 'lg:grid-cols-3' : ''} gap-6`}>
         {(canAccessIncomes || canAccessExpenses) && (
-          <DashboardCharts monthlyData={monthlyData} expensesByCategory={expensesByCategory} />
+          <div className={canAccessPaymentOrders ? "lg:col-span-1" : "col-span-1"}>
+            <RecentTransactions transactions={recentTransactions} />
+          </div>
         )}
-
-        <div className={`grid grid-cols-1 ${canAccessPaymentOrders ? 'lg:grid-cols-3' : ''} gap-6`}>
-          {(canAccessIncomes || canAccessExpenses) && (
-            <div className={canAccessPaymentOrders ? "lg:col-span-1" : "col-span-1"}>
-              <RecentTransactions transactions={recentTransactions} />
-            </div>
-          )}
-          {canAccessPaymentOrders && (
-            <div className="lg:col-span-2">
-              <PaymentOrdersWidget paymentOrders={paymentOrders} canManage={canManagePaymentOrders} />
-            </div>
-          )}
-        </div>
-
-        {canAccessExpenses && expensesByCategory.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {expensesByCategory.slice(0, 4).map((cat) => (
-              <Card
-                key={cat.id}
-                className="border-border shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group bg-card border"
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">{cat.emoji}</span>
-                  </div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.category}</p>
-                  <p className="text-xl font-bold text-foreground font-sans mt-1">${cat.amount.toLocaleString()}</p>
-                </CardContent>
-              </Card>
-            ))}
+        {canAccessPaymentOrders && (
+          <div className="lg:col-span-2">
+            <PaymentOrdersWidget paymentOrders={paymentOrders} canManage={canManagePaymentOrders} />
           </div>
         )}
       </div>
-    </CRMLayout>
+
+      {canAccessExpenses && expensesByCategory.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {expensesByCategory.slice(0, 4).map((cat) => (
+            <Card
+              key={cat.id}
+              className="border-border shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group bg-card border"
+            >
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">{cat.emoji}</span>
+                </div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.category}</p>
+                <p className="text-xl font-bold text-foreground font-sans mt-1">${cat.amount.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   )
+
 }
