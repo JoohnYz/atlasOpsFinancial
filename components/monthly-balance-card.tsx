@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSmartCache } from "@/hooks/use-smart-cache"
 import { useRealtime } from "@/hooks/use-realtime"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 export function MonthlyBalanceCard() {
     // Use Smart Cache for persistence across page changes
@@ -40,7 +41,9 @@ export function MonthlyBalanceCard() {
                             <Wallet className="w-3.5 h-3.5 text-blue-100" />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold font-sans tracking-tight">${data.overallBalance.toLocaleString()}</p>
+                    <div className="text-2xl font-bold font-sans tracking-tight">
+                        <AmountTicker value={data.overallBalance} prefix="$" />
+                    </div>
                     <div className="mt-3 flex items-center gap-1.5">
                         <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${data.isIncrease ? 'bg-emerald-400/20 text-emerald-300' : 'bg-red-400/20 text-red-300'}`}>
                             {data.isIncrease ? (

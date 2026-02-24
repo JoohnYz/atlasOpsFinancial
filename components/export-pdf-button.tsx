@@ -199,7 +199,7 @@ export function ExportPDFButton({ incomes, expenses, payroll, companyName = "Atl
             const y = (pageHeight - wmHeight) / 2
 
             doc.saveGraphicsState()
-            doc.setGState(new (doc as any).GState({ opacity: 0.25 }))
+            doc.setGState(new (doc as any).GState({ opacity: 0.09 }))
             doc.addImage(imgLogo, 'PNG', x, y, wmWidth, wmHeight)
             doc.restoreGraphicsState()
           } catch (e) {

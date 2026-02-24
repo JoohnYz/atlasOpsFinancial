@@ -131,6 +131,46 @@ export interface UserPermission {
   updated_at?: string
 }
 
+export interface Client {
+  id: string
+  name: string
+  email: string
+  phone: string
+  address: string
+  document_type: string
+  document_number: string
+  branch: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface Branch {
+  id: string
+  code: string
+  name: string
+  address: string
+  city: string
+  state: string
+  country: string
+  phone: string
+  email: string
+  manager: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface Vendor {
+  id: string
+  name: string
+  email: string
+  phone: string
+  address: string
+  rif: string
+  state: string
+  created_at?: string
+  updated_at?: string
+}
+
 export const categoryLabels: Record<ExpenseCategory, string> = {
   aviation: "Aviación",
   fuel: "Gasolina",

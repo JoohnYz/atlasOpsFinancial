@@ -11,6 +11,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { getExpenses, getIncomes, getStaff, calculateMonthlyBalance, getCategories, getPaymentOrders } from "@/lib/data.server"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { RecentTransactions } from "@/components/recent-transactions"
+import { DashboardMetrics } from "@/components/dashboard-metrics"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 import { PaymentOrdersWidget } from "@/components/payment-orders-widget"
 import { createClient } from "@/lib/supabase/server"
 import { getUserPermissions } from "@/lib/permission-actions"
@@ -106,10 +108,11 @@ export default async function Dashboard() {
   const metrics = [
     {
       label: "Ingresos Totales",
-      value: `$${totalIncome.toLocaleString()}`,
+      value: totalIncome,
+      isCurrency: true,
       change: incomes.length > 0 ? `${incomes.length} registros` : "Sin registros",
       trend: incomes.length > 0 ? "up" : "neutral",
-      icon: TrendingUp,
+      icon: "trending-up",
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
       borderColor: "border-emerald-200 dark:border-emerald-800/50",
@@ -118,10 +121,11 @@ export default async function Dashboard() {
     },
     {
       label: "Gastos Totales",
-      value: `$${totalExpenses.toLocaleString()}`,
+      value: totalExpenses,
+      isCurrency: true,
       change: expenses.length > 0 ? `${expenses.length} registros` : "Sin registros",
       trend: expenses.length > 0 ? "up" : "neutral",
-      icon: TrendingDown,
+      icon: "trending-down",
       color: "text-red-600 dark:text-red-400",
       bg: "bg-red-50 dark:bg-red-900/20",
       borderColor: "border-red-200 dark:border-red-800/50",
@@ -130,10 +134,11 @@ export default async function Dashboard() {
     },
     {
       label: "Nomina Pagada",
-      value: `$${totalPayroll.toLocaleString()}`,
+      value: totalPayroll,
+      isCurrency: true,
       change: pendingPayrollCount > 0 ? `${pendingPayrollCount} pendientes` : "Al dia",
       trend: pendingPayrollCount > 0 ? "down" : "neutral",
-      icon: Wallet,
+      icon: "wallet",
       color: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-50 dark:bg-blue-900/20",
       borderColor: "border-blue-200 dark:border-blue-800/50",
@@ -145,7 +150,7 @@ export default async function Dashboard() {
       value: activeStaff.toString(),
       change: staff.length > 0 ? `${staff.length} total` : "Sin personal",
       trend: staff.length > 0 ? "up" : "neutral",
-      icon: Users,
+      icon: "users",
       color: "text-purple-600 dark:text-purple-400",
       bg: "bg-purple-50 dark:bg-purple-900/20",
       borderColor: "border-purple-200 dark:border-purple-800/50",
@@ -177,32 +182,7 @@ export default async function Dashboard() {
         <p className="text-lg text-muted-foreground font-medium">Resumen financiero completo de tu empresa</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {metrics.map((metric, index) => (
-          <Link key={index} href={metric.href}>
-            <Card
-              className={`${metric.bg} border-2 ${metric.borderColor} hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer group h-full`}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-xl ${metric.bg} border ${metric.borderColor}`}>
-                    <metric.icon className={`w-6 h-6 ${metric.color}`} />
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full ${metric.trend === "up" ? "bg-emerald-100/50 text-emerald-700 dark:text-emerald-400" : metric.trend === "down" ? "bg-red-100/50 text-red-700 dark:text-red-400" : "bg-secondary text-muted-foreground"}`}
-                  >
-                    {metric.change}
-                  </span>
-                </div>
-                <div>
-                  <p className={`text-3xl font-bold font-sans ${metric.color}`}>{metric.value}</p>
-                  <p className="text-sm text-muted-foreground font-medium mt-1">{metric.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <DashboardMetrics metrics={metrics as any} />
 
       {canAccessReports && (
         <Card className="border-0 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 text-white shadow-xl">
@@ -210,7 +190,9 @@ export default async function Dashboard() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <p className="text-blue-100 font-medium text-sm tracking-wide">BALANCE GENERAL</p>
-                <p className="text-5xl font-bold mt-3 font-sans">${overallBalance.toLocaleString()}</p>
+                <div className="text-5xl font-bold mt-3 font-sans">
+                  <AmountTicker value={overallBalance} prefix="$" />
+                </div>
                 <p className="text-blue-100 mt-3 flex items-center gap-2 font-medium">
                   {isIncrease ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                   {isIncrease ? "+" : "-"}
@@ -264,7 +246,9 @@ export default async function Dashboard() {
                   <span className="text-2xl">{cat.emoji}</span>
                 </div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.category}</p>
-                <p className="text-xl font-bold text-foreground font-sans mt-1">${cat.amount.toLocaleString()}</p>
+                <div className="text-xl font-bold text-foreground font-sans mt-1">
+                  <AmountTicker value={cat.amount} prefix="$" />
+                </div>
               </CardContent>
             </Card>
           ))}

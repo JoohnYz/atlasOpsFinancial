@@ -2,6 +2,7 @@
 
 import { format } from "date-fns"
 import { Check, X, Calendar, CreditCard, DollarSign, FileText, ShieldCheck, Download, Pencil } from "lucide-react"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -125,9 +126,12 @@ export function PaymentOrderDetailsModal({
                                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 mb-1">
                                     <DollarSign className="w-3 h-3" /> Monto
                                 </span>
-                                <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </p>
+                                <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                    <AmountTicker
+                                        value={order.amount}
+                                        prefix={order.currency === 'BS' ? 'Bs. ' : '$'}
+                                    />
+                                </div>
                             </div>
                         </div>
 

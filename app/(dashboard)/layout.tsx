@@ -102,9 +102,11 @@ export default function DashboardLayout({
                     )
                 })}
             </nav>
-            <div className="mt-6 border-t border-sidebar-border/50 pt-4">
-                <MonthlyBalanceCard />
-            </div>
+            {(permissions?.email === 'admin@atlasops.com' || permissions?.access_reports) && (
+                <div className="mt-6 border-t border-sidebar-border/50 pt-4">
+                    <MonthlyBalanceCard />
+                </div>
+            )}
         </>
     )
 
@@ -130,7 +132,7 @@ export default function DashboardLayout({
                         </SheetContent>
                     </Sheet>
 
-                    <div className="relative">
+                    <Link href="/dashboard" className="relative cursor-pointer transition-opacity hover:opacity-80">
                         <Image
                             src="/images/qocudl4nzvcitky1762190700.png"
                             alt="AtlasOps Financial"
@@ -147,7 +149,7 @@ export default function DashboardLayout({
                             className="object-cover -my-6 hidden dark:block"
                             priority
                         />
-                    </div>
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-2">

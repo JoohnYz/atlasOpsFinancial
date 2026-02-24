@@ -12,6 +12,7 @@ import { Income } from "@/lib/types"
 import { Calendar, DollarSign, Tag, User, FileText, Trash2, Edit } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 interface IncomeDetailsModalProps {
     income: Income | null
@@ -57,9 +58,9 @@ export function IncomeDetailsModal({
                             <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                                 <DollarSign className="w-3 h-3" /> MONTO
                             </span>
-                            <p className="text-lg text-emerald-500 font-bold">
-                                ${income.amount.toLocaleString()}
-                            </p>
+                            <div className="text-lg text-emerald-500 font-bold">
+                                <AmountTicker value={income.amount} prefix="$" />
+                            </div>
                         </div>
                         <div className="space-y-1">
                             <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { getCachedData, setCachedData } from "@/lib/smart-cache"
 import { useRealtime } from "./use-realtime"
 
@@ -21,19 +21,29 @@ export function useSmartCache<T>(
     const [data, setData] = useState<T | null>(initialData)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<Error | null>(null)
+    const isMounted = useRef(true)
+
+    useEffect(() => {
+        isMounted.current = true
+        return () => {
+            isMounted.current = false
+        }
+    }, [])
 
     const refresh = useCallback(async (isSilent = false) => {
         if (!isSilent) setLoading(true)
         try {
             const freshData = await fetcher()
-            setCachedData(key, freshData)
-            setData(freshData)
-            setError(null)
+            if (isMounted.current) {
+                setCachedData(key, freshData)
+                setData(freshData)
+                setError(null)
+            }
         } catch (err: any) {
             console.error(`[useSmartCache] Error fetching fresh data for ${key}:`, err)
-            setError(err)
+            if (isMounted.current) setError(err)
         } finally {
-            if (!isSilent) setLoading(false)
+            if (!isSilent && isMounted.current) setLoading(false)
         }
     }, [key, fetcher])
 
@@ -42,6 +52,7 @@ export function useSmartCache<T>(
         const cached = getCachedData<T>(key)
         if (cached !== null) {
             setData(cached)
+            refresh(true) // Silent refresh to ensure data is still accurate
         } else {
             refresh()
         }

@@ -14,6 +14,18 @@ import { addIncome, deleteIncome, updateIncome } from "@/lib/data.client"
 import type { Income } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { AmountTicker } from "@/components/ui/amount-ticker"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 
 export default function IncomePage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -21,6 +33,8 @@ export default function IncomePage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [incomes, setIncomes] = useState<Income[]>([])
+  const [incomeToDelete, setIncomeToDelete] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     fetchIncomes()
@@ -58,26 +72,44 @@ export default function IncomePage() {
     setShowEditModal(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este ingreso?")) return
+  const confirmDelete = async () => {
+    if (!incomeToDelete) return
     try {
-      await deleteIncome(id)
+      await deleteIncome(incomeToDelete)
       toast.success("Ingreso eliminado correctamente")
       fetchIncomes()
     } catch (error) {
       console.error("[v0] Error deleting income:", error)
       toast.error("Error al eliminar el ingreso")
+    } finally {
+      setShowDeleteConfirm(false)
+      setIncomeToDelete(null)
     }
+  }
+
+  const handleDeleteClick = (id: string) => {
+    setIncomeToDelete(id)
+    setShowDeleteConfirm(true)
   }
 
   const handleUpdate = async (id: string, data: Partial<Income>) => {
     try {
-      await updateIncome(id, data as any)
-      toast.success("Ingreso actualizado correctamente")
-      fetchIncomes()
-    } catch (error) {
-      console.error("[v0] Error updating income:", error)
-      toast.error("Error al actualizar el ingreso")
+      const result = await updateIncome(id, data as any)
+      if (result.success) {
+        toast.success("Ingreso actualizado correctamente")
+        fetchIncomes()
+      } else {
+        if (result.error === "DUPLICATE_INCOME") {
+          toast.error("Ya existe un ingreso con estos mismos datos (Descripción, Monto, Fecha y Cliente)")
+        } else {
+          toast.error("Error al actualizar el ingreso: " + result.error)
+        }
+      }
+      return result
+    } catch (error: any) {
+      console.error("[v0] Unexpected error updating income:", error)
+      toast.error("Error inesperado al actualizar el ingreso")
+      return { success: false, error: "Unexpected error" }
     }
   }
 
@@ -90,10 +122,22 @@ export default function IncomePage() {
     notes?: string
   }) => {
     try {
-      await addIncome(data)
-      fetchIncomes()
-    } catch (error) {
-      console.error("[v0] Error adding income:", error)
+      const result = await addIncome(data)
+      if (result.success) {
+        toast.success("Ingreso registrado correctamente")
+        fetchIncomes()
+      } else {
+        if (result.error === "DUPLICATE_INCOME") {
+          toast.error("Ya existe un ingreso con estos mismos datos (Descripción, Monto, Fecha y Cliente)")
+        } else {
+          toast.error("Error al registrar el ingreso: " + result.error)
+        }
+      }
+      return result
+    } catch (error: any) {
+      console.error("[v0] Unexpected error adding income:", error)
+      toast.error("Error inesperado al registrar el ingreso")
+      return { success: false, error: "Unexpected error" }
     }
   }
 
@@ -117,7 +161,9 @@ export default function IncomePage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Ingresos Totales</p>
-                  <p className="text-2xl font-bold text-foreground">${totalIncome.toLocaleString()}</p>
+                  <div className="text-2xl font-bold text-foreground">
+                    <AmountTicker value={totalIncome} prefix="$" />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -130,7 +176,9 @@ export default function IncomePage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Este Mes</p>
-                  <p className="text-2xl font-bold text-foreground">${thisMonthIncome.toLocaleString()}</p>
+                  <div className="text-2xl font-bold text-foreground">
+                    <AmountTicker value={thisMonthIncome} prefix="$" />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -202,7 +250,7 @@ export default function IncomePage() {
                       <TableCell className="text-muted-foreground">{income.client || "-"}</TableCell>
                       <TableCell className="text-muted-foreground">{income.date}</TableCell>
                       <TableCell className="text-emerald-500 font-semibold">
-                        +${income.amount.toLocaleString()}
+                        <AmountTicker value={income.amount} prefix="+$" />
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
                         {income.notes || "-"}
@@ -237,7 +285,7 @@ export default function IncomePage() {
                               className="text-destructive cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleDelete(income.id)
+                                handleDeleteClick(income.id)
                               }}
                             >
                               Eliminar
@@ -259,7 +307,7 @@ export default function IncomePage() {
         open={showDetailsModal}
         onOpenChange={setShowDetailsModal}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={handleDeleteClick}
       />
 
       <EditIncomeModal
@@ -268,6 +316,23 @@ export default function IncomePage() {
         onOpenChange={setShowEditModal}
         onUpdate={handleUpdate}
       />
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="bg-card text-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar ingreso?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente la información de este ingreso del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!incomeToDelete} onClick={() => setIncomeToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

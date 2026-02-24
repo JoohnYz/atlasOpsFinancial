@@ -35,16 +35,26 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
   const [date, setDate] = useState("")
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd?.({
-      description,
-      amount: Number.parseFloat(amount),
-      category,
-      date,
-    })
-    setOpen(false)
-    resetForm()
+    setIsSubmitting(true)
+    try {
+      const result = await onAdd?.({
+        description,
+        amount: Number.parseFloat(amount),
+        category,
+        date,
+      }) as unknown as { success: boolean, error?: string }
+
+      if (result?.success) {
+        setOpen(false)
+        resetForm()
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const resetForm = () => {
@@ -63,7 +73,7 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
           Nuevo Gasto
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className="w-[95vw] sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Registrar Nuevo Gasto</DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -132,6 +142,7 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
                     size="icon"
                     onClick={() => setInvoiceFile(null)}
                     className="h-8 w-8"
+                    disabled={isSubmitting}
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -148,6 +159,7 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
                     className="hidden"
                     accept=".pdf,.png,.jpg,.jpeg"
                     onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
+                    disabled={isSubmitting}
                   />
                 </label>
               )}
@@ -155,11 +167,11 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="border-border">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="border-border" disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Guardar Gasto
+            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting}>
+              {isSubmitting ? "Guardando..." : "Guardar Gasto"}
             </Button>
           </div>
         </form>

@@ -35,20 +35,29 @@ export function AddIncomeModal({ onAdd }: AddIncomeModalProps) {
   const [date, setDate] = useState("")
   const [client, setClient] = useState("")
   const [notes, setNotes] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [category, setCategory] = useState("") // Declare category and setCategory variables
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd?.({
-      description,
-      amount: Number.parseFloat(amount),
-      date,
-      client,
-      notes,
-      category, // Include category in the submitted data
-    })
-    setOpen(false)
-    resetForm()
+    setIsSubmitting(true)
+    try {
+      const result = await onAdd?.({
+        description,
+        amount: Number.parseFloat(amount),
+        date,
+        client,
+        notes,
+        category, // Include category in the submitted data
+      }) as unknown as { success: boolean, error?: string }
+
+      if (result?.success) {
+        setOpen(false)
+        resetForm()
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const resetForm = () => {
@@ -152,11 +161,11 @@ export function AddIncomeModal({ onAdd }: AddIncomeModalProps) {
           </div>
 
           <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="border-border">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="border-border" disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Registrar Ingreso
+            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting}>
+              {isSubmitting ? "Registrando..." : "Registrar Ingreso"}
             </Button>
           </div>
         </form>

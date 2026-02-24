@@ -16,6 +16,7 @@ import { getPendingPaymentOrders, getPaymentOrderHistory } from "@/lib/actions"
 import { PaymentOrder } from "@/lib/types"
 import { Clock, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 interface NotificationsBellProps {
     canAccess?: boolean
@@ -290,7 +291,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
+                                                    <AmountTicker value={order.amount} prefix={order.currency === 'BS' ? 'Bs. ' : '$'} />
                                                 </p>
                                                 <span className={`text-[10px] uppercase font-bold ${order.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
                                                     {order.status === 'approved' ? 'Aprobado' : 'Rechazado'}
@@ -312,7 +313,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
+                                                    <AmountTicker value={order.amount} prefix={order.currency === 'BS' ? 'Bs. ' : '$'} />
                                                 </p>
                                                 <span className="text-[10px] uppercase font-bold text-blue-600/70 dark:text-blue-400/70">Pendiente</span>
                                             </div>
@@ -366,7 +367,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
+                                                    <AmountTicker value={order.amount} prefix={order.currency === 'BS' ? 'Bs. ' : '$'} />
                                                 </p>
                                                 <span className={`text-[10px] uppercase font-bold ${order.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
                                                     {order.status === 'approved' ? 'Aprobado' : 'Rechazado'}
@@ -388,7 +389,7 @@ export function NotificationsBell({ canAccess = false, canManage = false, curren
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    {order.currency === 'BS' ? 'Bs.' : '$'} {order.amount.toLocaleString('en-US')}
+                                                    <AmountTicker value={order.amount} prefix={order.currency === 'BS' ? 'Bs. ' : '$'} />
                                                 </p>
                                                 <span className="text-[10px] uppercase font-bold text-blue-600/50">Pendiente</span>
                                             </div>

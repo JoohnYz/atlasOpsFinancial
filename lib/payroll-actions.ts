@@ -10,6 +10,8 @@ export async function addPayrollAction(data: {
     date: string
     employee_name?: string
     status?: string
+    invoice_url?: string
+    invoice_name?: string
 }) {
     try {
         const supabase = await createClient()
@@ -50,6 +52,8 @@ export async function addPayrollAction(data: {
                 date: data.date,
                 payment_date: data.date,
                 status: data.status || "Pendiente",
+                invoice_url: data.invoice_url,
+                invoice_name: data.invoice_name,
             },
         ])
 
@@ -164,6 +168,8 @@ export async function updatePayrollAction(id: string, data: {
     period: string
     date: string
     employee_name?: string
+    invoice_url?: string
+    invoice_name?: string
 }) {
     try {
         const supabase = await createClient()
@@ -201,6 +207,8 @@ export async function updatePayrollAction(id: string, data: {
             period: data.period,
             date: data.date,
             payment_date: data.date,
+            invoice_url: data.invoice_url,
+            invoice_name: data.invoice_name,
         }).eq("id", id)
 
         if (error) {

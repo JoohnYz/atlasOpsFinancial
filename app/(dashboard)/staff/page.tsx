@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AddStaffModal } from "@/components/add-staff-modal"
 import { createClient } from "@/lib/supabase/client"
 import type { Staff, PayrollPayment } from "@/lib/types"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 export default function StaffPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -190,7 +191,9 @@ export default function StaffPage() {
           <CardContent className="p-5">
             <div>
               <p className="text-sm text-muted-foreground">Nomina Mensual</p>
-              <p className="text-2xl font-bold text-foreground">${totalSalary.toLocaleString()}</p>
+              <div className="text-2xl font-bold text-foreground">
+                <AmountTicker value={totalSalary} prefix="$" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -277,7 +280,7 @@ export default function StaffPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <DollarSign className="w-4 h-4 text-muted-foreground" />
                   <span className="text-foreground font-medium">
-                    ${Number(staffMember.salary).toLocaleString()}/mes
+                    <AmountTicker value={Number(staffMember.salary)} prefix="$" suffix="/mes" />
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -346,7 +349,9 @@ export default function StaffPage() {
                     <DollarSign className="w-4 h-4" />
                     Salario
                   </div>
-                  <p className="text-foreground font-semibold">${Number(selectedStaff.salary).toLocaleString()}/mes</p>
+                  <div className="text-foreground font-semibold">
+                    <AmountTicker value={Number(selectedStaff.salary)} prefix="$" suffix="/mes" />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -398,7 +403,9 @@ export default function StaffPage() {
                       <p className="text-sm text-muted-foreground">{payment.payment_date}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-foreground">${Number(payment.net_salary || payment.amount || 0).toLocaleString()}</p>
+                      <div className="font-semibold text-foreground">
+                        <AmountTicker value={Number(payment.net_salary || payment.amount || 0)} prefix="$" />
+                      </div>
                       <Badge
                         variant="secondary"
                         className={

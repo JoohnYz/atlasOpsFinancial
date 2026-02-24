@@ -13,6 +13,25 @@ export async function addIncome(data: {
 }) {
   const supabase = createClient()
 
+  // --- Duplicate Check ---
+  const { data: existingIncome, error: checkError } = await supabase
+    .from("income")
+    .select("id")
+    .eq("description", data.description)
+    .eq("amount", data.amount)
+    .eq("date", data.date)
+    .eq("client", data.client || "")
+    .maybeSingle()
+
+  if (checkError) {
+    console.error("[v0] Error checking for duplicate income:", checkError)
+  }
+
+  if (existingIncome) {
+    return { success: false, error: "DUPLICATE_INCOME" }
+  }
+  // ------------------------
+
   const { error } = await supabase.from("income").insert([
     {
       description: data.description,
@@ -26,8 +45,10 @@ export async function addIncome(data: {
 
   if (error) {
     console.error("[v0] Error adding income:", error)
-    throw error
+    return { success: false, error: error.message }
   }
+
+  return { success: true }
 }
 
 export async function addExpense(data: {
@@ -39,6 +60,25 @@ export async function addExpense(data: {
   notes?: string
 }) {
   const supabase = createClient()
+
+  // --- Duplicate Check ---
+  const { data: existingExpense, error: checkError } = await supabase
+    .from("expenses")
+    .select("id")
+    .eq("description", data.description)
+    .eq("amount", data.amount)
+    .eq("category", data.category)
+    .eq("date", data.date)
+    .maybeSingle()
+
+  if (checkError) {
+    console.error("[v0] Error checking for duplicate expense:", checkError)
+  }
+
+  if (existingExpense) {
+    return { success: false, error: "DUPLICATE_EXPENSE" }
+  }
+  // ------------------------
 
   const { error } = await supabase.from("expenses").insert([
     {
@@ -53,8 +93,10 @@ export async function addExpense(data: {
 
   if (error) {
     console.error("[v0] Error adding expense:", error)
-    throw error
+    return { success: false, error: error.message }
   }
+
+  return { success: true }
 }
 
 export async function addStaff(data: {
@@ -171,6 +213,26 @@ export async function updateIncome(id: string, data: {
 }) {
   const supabase = createClient()
 
+  // --- Duplicate Check ---
+  const { data: existingIncome, error: checkError } = await supabase
+    .from("income")
+    .select("id")
+    .eq("description", data.description)
+    .eq("amount", data.amount)
+    .eq("date", data.date)
+    .eq("client", data.client || "")
+    .neq("id", id)
+    .maybeSingle()
+
+  if (checkError) {
+    console.error("[v0] Error checking for duplicate income:", checkError)
+  }
+
+  if (existingIncome) {
+    return { success: false, error: "DUPLICATE_INCOME" }
+  }
+  // ------------------------
+
   const { error } = await supabase.from("income").update({
     description: data.description,
     amount: data.amount,
@@ -182,8 +244,10 @@ export async function updateIncome(id: string, data: {
 
   if (error) {
     console.error("[v0] Error updating income:", error)
-    throw error
+    return { success: false, error: error.message }
   }
+
+  return { success: true }
 }
 
 export async function updateExpense(id: string, data: {
@@ -196,6 +260,26 @@ export async function updateExpense(id: string, data: {
 }) {
   const supabase = createClient()
 
+  // --- Duplicate Check ---
+  const { data: existingExpense, error: checkError } = await supabase
+    .from("expenses")
+    .select("id")
+    .eq("description", data.description)
+    .eq("amount", data.amount)
+    .eq("category", data.category)
+    .eq("date", data.date)
+    .neq("id", id)
+    .maybeSingle()
+
+  if (checkError) {
+    console.error("[v0] Error checking for duplicate expense:", checkError)
+  }
+
+  if (existingExpense) {
+    return { success: false, error: "DUPLICATE_EXPENSE" }
+  }
+  // ------------------------
+
   const { error } = await supabase.from("expenses").update({
     description: data.description,
     amount: data.amount,
@@ -207,6 +291,8 @@ export async function updateExpense(id: string, data: {
 
   if (error) {
     console.error("[v0] Error updating expense:", error)
-    throw error
+    return { success: false, error: error.message }
   }
+
+  return { success: true }
 }

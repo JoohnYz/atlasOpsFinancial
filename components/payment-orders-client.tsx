@@ -7,6 +7,7 @@ import { format } from "date-fns"
 import { useRealtime } from "@/hooks/use-realtime"
 import { Check, X, MoreHorizontal, Pencil, Trash, Plus, ShieldCheck, Download, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -282,7 +283,9 @@ export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }
                                         </TableCell>
                                         <TableCell className="font-medium">{order.description}</TableCell>
                                         <TableCell>{order.payment_method}</TableCell>
-                                        <TableCell className="text-right">${order.amount.toLocaleString('en-US')}</TableCell>
+                                        <TableCell className="text-right">
+                                            <AmountTicker value={order.amount} prefix="$" />
+                                        </TableCell>
                                         <TableCell>{getStatusBadge(order)}</TableCell>
                                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">

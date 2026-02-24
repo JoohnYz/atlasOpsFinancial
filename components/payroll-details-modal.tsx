@@ -1,6 +1,7 @@
 "use client"
 
 import { CheckCircle, Clock, XCircle, User, Calendar, DollarSign, Briefcase, FileText, Hash, Pencil } from "lucide-react"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -144,19 +145,25 @@ export function PayrollDetailsModal({ payment, open, onOpenChange, onMarkPaid, o
                             label="Fecha de Pago"
                             value={formatDate(payment.payment_date || payment.date)}
                         />
-                        <DetailRow
-                            icon={<DollarSign className="w-4 h-4 text-emerald-500" />}
-                            label="Monto Bruto"
-                            value={formatCurrency(payment.amount)}
-                            highlight
-                        />
+                        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <DollarSign className="w-4 h-4 text-emerald-500" />
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">Monto Bruto</span>
+                            </div>
+                            <div className="text-sm font-semibold text-foreground">
+                                <AmountTicker value={Number(payment.amount)} prefix="$" />
+                            </div>
+                        </div>
                         {payment.net_salary !== undefined && payment.net_salary !== payment.amount && (
-                            <DetailRow
-                                icon={<DollarSign className="w-4 h-4 text-emerald-500" />}
-                                label="Salario Neto"
-                                value={formatCurrency(payment.net_salary)}
-                                highlight
-                            />
+                            <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <DollarSign className="w-4 h-4 text-emerald-500" />
+                                    <span className="text-sm text-muted-foreground whitespace-nowrap">Salario Neto</span>
+                                </div>
+                                <div className="text-sm font-semibold text-foreground">
+                                    <AmountTicker value={Number(payment.net_salary)} prefix="$" />
+                                </div>
+                            </div>
                         )}
                     </div>
 
@@ -181,6 +188,16 @@ export function PayrollDetailsModal({ payment, open, onOpenChange, onMarkPaid, o
 
                     {/* Actions */}
                     <div className="flex flex-wrap justify-end gap-3 pt-1">
+                        {payment.invoice_url && (
+                            <Button
+                                variant="outline"
+                                className="border-primary/30 text-primary hover:bg-primary/10"
+                                onClick={() => window.open(payment.invoice_url, "_blank")}
+                            >
+                                <FileText className="w-4 h-4 mr-2" />
+                                Ver Comprobante
+                            </Button>
+                        )}
                         {isPending && onCancel && (
                             <Button
                                 variant="outline"

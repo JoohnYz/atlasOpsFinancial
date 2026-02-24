@@ -6,7 +6,7 @@ import { PaymentOrder } from "./types"
 import { getUserPermissions } from "./permission-actions"
 
 export async function getPendingPaymentOrders() {
-    console.log("[Actions] getPendingPaymentOrders")
+    console.log("[Actions] getPendingPaymentOrders called")
     try {
         const supabase = await createClient()
         const { data, error } = await supabase
@@ -15,17 +15,21 @@ export async function getPendingPaymentOrders() {
             .eq("status", "pending")
             .order("date", { ascending: false })
 
-        if (error) throw error
+        if (error) {
+            console.error("[Actions] Supabase error in getPendingPaymentOrders:", error)
+            throw error
+        }
 
-        return { data }
-    } catch (error) {
-        console.error("Error fetching pending payment orders:", error)
-        return { error: "Error al obtener órdenes de pago pendientes" }
+        console.log(`[Actions] getPendingPaymentOrders returning ${data?.length || 0} items`)
+        return { data: data || [] }
+    } catch (error: any) {
+        console.error("[Actions] Error fetching pending payment orders:", error)
+        return { error: "Error al obtener órdenes de pago pendientes: " + (error.message || "Error desconocido") }
     }
 }
 
 export async function getPaymentOrderHistory() {
-    console.log("[Actions] getPaymentOrderHistory")
+    console.log("[Actions] getPaymentOrderHistory called")
     try {
         const supabase = await createClient()
         const { data, error } = await supabase
@@ -35,12 +39,16 @@ export async function getPaymentOrderHistory() {
             .order("date", { ascending: false })
             .limit(20) // Limit to last 20 items
 
-        if (error) throw error
+        if (error) {
+            console.error("[Actions] Supabase error in getPaymentOrderHistory:", error)
+            throw error
+        }
 
-        return { data }
-    } catch (error) {
-        console.error("Error fetching payment order history:", error)
-        return { error: "Error al obtener el historial" }
+        console.log(`[Actions] getPaymentOrderHistory returning ${data?.length || 0} items`)
+        return { data: data || [] }
+    } catch (error: any) {
+        console.error("[Actions] Error fetching payment order history:", error)
+        return { error: "Error al obtener el historial: " + (error.message || "Error desconocido") }
     }
 }
 

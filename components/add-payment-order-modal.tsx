@@ -495,43 +495,16 @@ export function AddPaymentOrderModal({ open, onOpenChange, orderToEdit }: AddPay
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-4 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="currency"
-                                    render={({ field }) => (
-                                        <FormItem className="col-span-1">
-                                            <FormLabel>Moneda</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                value={field.value}
-                                                disabled={true}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Moneda" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="USD">USD</SelectItem>
-                                                    <SelectItem value="BS">BS</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
+                            <div className="grid gap-4 py-2 mt-4">
                                 <FormField
                                     control={form.control}
                                     name="amount"
                                     render={({ field }) => (
-                                        <FormItem className="col-span-3">
+                                        <FormItem>
                                             <FormLabel>Monto</FormLabel>
                                             <FormControl>
                                                 <div className="relative">
-                                                    <span className="absolute left-3 top-2.5 text-gray-500">
+                                                    <span className="absolute left-3 top-1.5 text-gray-500">
                                                         {currency === 'BS' ? 'Bs.' : '$'}
                                                     </span>
                                                     <Input type="number" step="0.01" placeholder="0.00" className="pl-8" {...field} />

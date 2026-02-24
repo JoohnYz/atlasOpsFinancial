@@ -24,6 +24,7 @@ import { addExpense, deleteExpense, updateExpense } from "@/lib/data.client"
 import type { Expense } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 const renderCategoryBadge = (categoryName: string, categoryEmoji?: string) => {
   return (
@@ -101,23 +102,43 @@ export default function ExpensesPage() {
 
   const handleAddExpense = async (data: any) => {
     try {
-      await addExpense(data)
-      toast.success("Gasto agregado correctamente")
-      fetchData()
-    } catch (error) {
-      console.error("[v0] Error adding expense:", error)
-      toast.error("Error al agregar el gasto")
+      const result = await addExpense(data)
+      if (result.success) {
+        toast.success("Gasto agregado correctamente")
+        fetchData()
+      } else {
+        if (result.error === "DUPLICATE_EXPENSE") {
+          toast.error("Ya existe un gasto con estos mismos datos (Descripción, Monto, Fecha y Categoría)")
+        } else {
+          toast.error("Error al agregar el gasto: " + result.error)
+        }
+      }
+      return result
+    } catch (error: any) {
+      console.error("[v0] Unexpected error adding expense:", error)
+      toast.error("Error inesperado al agregar el gasto")
+      return { success: false, error: "Unexpected error" }
     }
   }
 
   const handleUpdateExpense = async (id: string, data: any) => {
     try {
-      await updateExpense(id, data)
-      toast.success("Gasto actualizado correctamente")
-      fetchData()
-    } catch (error) {
-      console.error("[v0] Error updating expense:", error)
-      toast.error("Error al actualizar el gasto")
+      const result = await updateExpense(id, data)
+      if (result.success) {
+        toast.success("Gasto actualizado correctamente")
+        fetchData()
+      } else {
+        if (result.error === "DUPLICATE_EXPENSE") {
+          toast.error("Ya existe un gasto con estos mismos datos (Descripción, Monto, Fecha y Categoría)")
+        } else {
+          toast.error("Error al actualizar el gasto: " + result.error)
+        }
+      }
+      return result
+    } catch (error: any) {
+      console.error("[v0] Unexpected error updating expense:", error)
+      toast.error("Error inesperado al actualizar el gasto")
+      return { success: false, error: "Unexpected error" }
     }
   }
 
@@ -164,7 +185,9 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-lg font-bold text-foreground">${totalExpenses.toLocaleString()}</p>
+                <div className="text-lg font-bold text-foreground">
+                  <AmountTicker value={totalExpenses} prefix="$" />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -180,7 +203,9 @@ export default function ExpensesPage() {
                 <span className="text-2xl">{cat.emoji || "📁"}</span>
                 <div>
                   <p className="text-xs text-muted-foreground">{cat.name}</p>
-                  <p className="text-lg font-bold text-foreground">${cat.amount.toLocaleString()}</p>
+                  <div className="text-lg font-bold text-foreground">
+                    <AmountTicker value={cat.amount} prefix="$" />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -198,7 +223,7 @@ export default function ExpensesPage() {
               onClick={() => setSelectedCategory(cat.name)}
             >
               <span className="mr-1.5">{cat.emoji || "📁"}</span>
-              {cat.name}: ${cat.amount.toLocaleString()}
+              {cat.name}: <AmountTicker value={cat.amount} prefix="$" className="inline" />
             </Badge>
           ))}
         </div>
@@ -259,7 +284,7 @@ export default function ExpensesPage() {
                       <TableCell>{renderCategoryBadge(expense.category, categoryData?.emoji)}</TableCell>
                       <TableCell className="text-muted-foreground">{expense.date}</TableCell>
                       <TableCell className="text-red-500 font-semibold">
-                        -${expense.amount.toLocaleString()}
+                        <AmountTicker value={expense.amount} prefix="-$" />
                       </TableCell>
                       <TableCell>
                         {expense.invoice_url ? (

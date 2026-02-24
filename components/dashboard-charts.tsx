@@ -15,6 +15,7 @@ import {
 } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, PieChartIcon } from "lucide-react"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 interface CategoryData {
   id: string
@@ -135,8 +136,10 @@ export function DashboardCharts({ monthlyData, expensesByCategory }: DashboardCh
                         backgroundColor: "hsl(var(--popover))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: "12px",
-                        color: "hsl(var(--popover-foreground))",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                       }}
+                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                      labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                       formatter={(value: any, name: any) => {
                         const cat = expensesByCategory.find(c => c.category === name)
                         return [`$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, `${cat?.emoji || ""} ${name || ""}`]
@@ -155,7 +158,9 @@ export function DashboardCharts({ monthlyData, expensesByCategory }: DashboardCh
                       <span className="text-xl">{cat.emoji || "📁"}</span>
                       <span className="text-sm font-medium text-foreground">{cat.category}</span>
                     </div>
-                    <span className="text-sm font-bold text-foreground">${cat.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <div className="text-sm font-bold text-foreground">
+                      <AmountTicker value={cat.amount} prefix="$" />
+                    </div>
                   </div>
                 ))}
               </div>

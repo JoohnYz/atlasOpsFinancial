@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/lib/supabase/client"
 import { ExportPDFButton } from "@/components/export-pdf-button"
 import type { Expense, Income, PayrollPayment } from "@/lib/types"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 interface Category {
   id: string
@@ -218,7 +219,9 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ingresos</p>
-                <p className="text-2xl font-bold text-emerald-500">${totalIncome.toLocaleString()}</p>
+                <div className="text-2xl font-bold text-emerald-500">
+                  <AmountTicker value={totalIncome} prefix="$" />
+                </div>
               </div>
               <div className="p-2.5 rounded-xl bg-emerald-500/10">
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -231,7 +234,9 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Gastos</p>
-                <p className="text-2xl font-bold text-red-500">${totalExpenses.toLocaleString()}</p>
+                <div className="text-2xl font-bold text-red-500">
+                  <AmountTicker value={totalExpenses} prefix="$" />
+                </div>
               </div>
               <div className="p-2.5 rounded-xl bg-red-500/10">
                 <TrendingDown className="w-5 h-5 text-red-500" />
@@ -244,7 +249,9 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Nómina</p>
-                <p className="text-2xl font-bold text-blue-500">${totalPayroll.toLocaleString()}</p>
+                <div className="text-2xl font-bold text-blue-500">
+                  <AmountTicker value={totalPayroll} prefix="$" />
+                </div>
               </div>
               <div className="p-2.5 rounded-xl bg-blue-500/10">
                 <BarChart3 className="w-5 h-5 text-blue-500" />
@@ -257,9 +264,9 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Balance Neto</p>
-                <p className="text-2xl font-bold text-primary">
-                  ${(totalIncome - totalExpenses - totalPayroll).toLocaleString()}
-                </p>
+                <div className="text-2xl font-bold text-primary">
+                  <AmountTicker value={totalIncome - totalExpenses - totalPayroll} prefix="$" />
+                </div>
               </div>
               <div className="p-2.5 rounded-xl bg-primary/10">
                 <PieChartIcon className="w-5 h-5 text-primary" />
@@ -309,11 +316,13 @@ export default function ReportsPage() {
                       <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(v) => `$${v / 1000}k`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e5e7eb",
+                          backgroundColor: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: "12px",
+                          boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                         }}
-                        labelStyle={{ color: "#1f2937" }}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                        labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                         formatter={(value: any) => [`$${Number(value || 0).toLocaleString()}`, ""]}
                       />
                       <Area
@@ -382,10 +391,13 @@ export default function ReportsPage() {
                         </Pie>
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: "#ffffff",
-                            border: "1px solid #e5e7eb",
+                            backgroundColor: "hsl(var(--popover))",
+                            border: "1px solid hsl(var(--border))",
                             borderRadius: "12px",
+                            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                           }}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                          labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                           formatter={(value: any, name: any) => {
                             const cat = categoryData.find(c => c.name === name)
                             return [`$${Number(value || 0).toLocaleString()}`, `${cat?.emoji || "📁"} ${name || "Otros"}`]
@@ -415,7 +427,9 @@ export default function ReportsPage() {
                               <span className="text-foreground">{cat.name}</span>
                             </div>
                             <div className="text-right">
-                              <span className="text-foreground font-medium">${cat.value.toLocaleString()}</span>
+                              <span className="text-foreground font-medium">
+                                <AmountTicker value={cat.value} prefix="$" />
+                              </span>
                               <span className="text-muted-foreground ml-2">({percentage}%)</span>
                             </div>
                           </div>
@@ -467,11 +481,13 @@ export default function ReportsPage() {
                       <YAxis type="category" dataKey="name" stroke="#6b7280" fontSize={12} width={120} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e5e7eb",
+                          backgroundColor: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: "12px",
+                          boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                         }}
-                        labelStyle={{ color: "#1f2937" }}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                        labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                         formatter={(value: any) => [`$${Number(value || 0).toLocaleString()}`, "Monto"]}
                       />
                       <Bar dataKey="monto" fill="#3b82f6" radius={[0, 4, 4, 0]} />

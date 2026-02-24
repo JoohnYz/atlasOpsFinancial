@@ -38,6 +38,8 @@ export function EditIncomeModal({ income, open, onOpenChange, onUpdate }: EditIn
     const [notes, setNotes] = useState("")
     const [category, setCategory] = useState("")
 
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
     useEffect(() => {
         if (income) {
             setDescription(income.description)
@@ -49,19 +51,27 @@ export function EditIncomeModal({ income, open, onOpenChange, onUpdate }: EditIn
         }
     }, [income, open])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!income) return
 
-        onUpdate(income.id, {
-            description,
-            amount: Number.parseFloat(amount),
-            date,
-            client,
-            notes,
-            category,
-        })
-        onOpenChange(false)
+        setIsSubmitting(true)
+        try {
+            const result = await onUpdate(income.id, {
+                description,
+                amount: Number.parseFloat(amount),
+                date,
+                client,
+                notes,
+                category,
+            }) as unknown as { success: boolean, error?: string }
+
+            if (result?.success) {
+                onOpenChange(false)
+            }
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (
@@ -150,11 +160,11 @@ export function EditIncomeModal({ income, open, onOpenChange, onUpdate }: EditIn
                     </div>
 
                     <div className="flex gap-2 justify-end pt-4">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-border">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-border" disabled={isSubmitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            Guardar Cambios
+                        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting}>
+                            {isSubmitting ? "Guardando..." : "Guardar Cambios"}
                         </Button>
                     </div>
                 </form>

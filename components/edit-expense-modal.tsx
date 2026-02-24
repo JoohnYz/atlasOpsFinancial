@@ -38,6 +38,8 @@ export function EditExpenseModal({ expense, open, onOpenChange, onUpdate }: Edit
     const [notes, setNotes] = useState("")
     const [category, setCategory] = useState("")
 
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
     useEffect(() => {
         if (expense) {
             setDescription(expense.description)
@@ -49,24 +51,32 @@ export function EditExpenseModal({ expense, open, onOpenChange, onUpdate }: Edit
         }
     }, [expense, open])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!expense) return
 
-        onUpdate(expense.id, {
-            description,
-            amount: Number.parseFloat(amount),
-            date,
-            vendor,
-            notes,
-            category,
-        })
-        onOpenChange(false)
+        setIsSubmitting(true)
+        try {
+            const result = await onUpdate(expense.id, {
+                description,
+                amount: Number.parseFloat(amount),
+                date,
+                vendor,
+                notes,
+                category,
+            }) as unknown as { success: boolean, error?: string }
+
+            if (result?.success) {
+                onOpenChange(false)
+            }
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] bg-card border-border">
+            <DialogContent className="w-[95vw] sm:max-w-[500px] bg-card border-border">
                 <DialogHeader>
                     <DialogTitle className="text-foreground">Editar Gasto</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
@@ -150,11 +160,11 @@ export function EditExpenseModal({ expense, open, onOpenChange, onUpdate }: Edit
                     </div>
 
                     <div className="flex gap-2 justify-end pt-4">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-border">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-border" disabled={isSubmitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            Guardar Cambios
+                        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting}>
+                            {isSubmitting ? "Guardando..." : "Guardar Cambios"}
                         </Button>
                     </div>
                 </form>

@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client"
 import { deletePayrollAction } from "@/lib/payroll-actions"
 import type { PayrollPayment, Staff } from "@/lib/types"
 import type { User as UserType } from "@supabase/supabase-js"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 export default function PayrollPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -134,7 +135,11 @@ export default function PayrollPage() {
   }
 
   const handleDownloadPDF = (payment: PayrollPayment) => {
-    console.log("Descargar PDF:", payment.id)
+    if (payment.invoice_url) {
+      window.open(payment.invoice_url, "_blank")
+    } else {
+      toast.error("Este pago no tiene un comprobante adjunto")
+    }
   }
 
   const handleMarkPaid = async (id: string) => {
@@ -241,7 +246,9 @@ export default function PayrollPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Pagado</p>
-                <p className="text-2xl font-bold text-foreground">${totalPaid.toLocaleString()}</p>
+                <div className="text-2xl font-bold text-foreground">
+                  <AmountTicker value={totalPaid} prefix="$" />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -254,7 +261,9 @@ export default function PayrollPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pendiente</p>
-                <p className="text-2xl font-bold text-foreground">${totalPending.toLocaleString()}</p>
+                <div className="text-2xl font-bold text-foreground">
+                  <AmountTicker value={totalPending} prefix="$" />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -319,12 +328,16 @@ export default function PayrollPage() {
                   const status = statusConfig[payment.status] || defaultStatus
                   const StatusIcon = status.icon
                   return (
-                    <TableRow key={payment.id} className="border-border hover:bg-secondary/30">
+                    <TableRow
+                      key={payment.id}
+                      className="border-border hover:bg-secondary/30 cursor-pointer"
+                      onClick={() => handleViewDetails(payment)}
+                    >
                       <TableCell className="font-medium text-foreground">{payment.staff_name}</TableCell>
                       <TableCell className="text-muted-foreground">{payment.period}</TableCell>
                       <TableCell className="text-muted-foreground">{payment.date}</TableCell>
                       <TableCell className="text-foreground font-semibold">
-                        ${Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <AmountTicker value={Number(payment.amount)} prefix="$" />
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={status.className}>
@@ -344,7 +357,7 @@ export default function PayrollPage() {
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
@@ -352,14 +365,20 @@ export default function PayrollPage() {
                           <DropdownMenuContent align="end" className="bg-card border-border">
                             <DropdownMenuItem
                               className="text-foreground cursor-pointer"
-                              onClick={() => handleViewDetails(payment)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleViewDetails(payment)
+                              }}
                             >
                               Ver detalles
                             </DropdownMenuItem>
                             {(payment.status === "pending" || payment.status === "Pendiente") && (
                               <DropdownMenuItem
                                 className="text-foreground cursor-pointer"
-                                onClick={() => handleEdit(payment)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEdit(payment)
+                                }}
                               >
                                 <Pencil className="w-3.5 h-3.5 mr-2" />
                                 Editar
@@ -368,21 +387,30 @@ export default function PayrollPage() {
                             {(payment.status === "pending" || payment.status === "Pendiente") && (
                               <DropdownMenuItem
                                 className="text-emerald-500 cursor-pointer"
-                                onClick={() => handleMarkPaid(payment.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMarkPaid(payment.id)
+                                }}
                               >
                                 Marcar como Pagado
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem
                               className="text-foreground cursor-pointer"
-                              onClick={() => handleDownloadPDF(payment)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDownloadPDF(payment)
+                              }}
                             >
                               Descargar recibo
                             </DropdownMenuItem>
                             {(payment.status !== "cancelled" && payment.status !== "Cancelado") && (
                               <DropdownMenuItem
                                 className="text-destructive cursor-pointer"
-                                onClick={() => handleCancel(payment.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCancel(payment.id)
+                                }}
                               >
                                 Cancelar Pago
                               </DropdownMenuItem>
@@ -390,7 +418,10 @@ export default function PayrollPage() {
                             {(payment.status === "pending" || payment.status === "Pendiente" || currentUser?.email === "admin@atlasops.com") && (
                               <DropdownMenuItem
                                 className="text-destructive cursor-pointer"
-                                onClick={() => handleDelete(payment)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDelete(payment)
+                                }}
                               >
                                 <Trash2 className="w-3.5 h-3.5 mr-2" />
                                 Eliminar pago

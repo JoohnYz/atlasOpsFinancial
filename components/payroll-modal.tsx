@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Staff } from "@/lib/types"
 import { addPayrollAction } from "@/lib/payroll-actions"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
+import { truncateFilename, cn } from "@/lib/utils"
 
 interface PayrollModalProps {
   staff: Staff[]
@@ -33,6 +35,7 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
   const [period, setPeriod] = useState("")
   const [date, setDate] = useState("")
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const activeStaff = staff.filter((s) => s.status === "active" || s.status === "Activo")
 
@@ -71,6 +74,38 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
     try {
       const employee = staff.find((s) => s.id === selectedStaff)
       const salaryAmount = Number.parseFloat(amount)
+      let invoiceUrl = ""
+      let invoiceName = ""
+
+      if (invoiceFile) {
+        const supabase = createClient()
+        const fileExt = invoiceFile.name.split('.').pop()
+        const fileName = `${selectedStaff}-${Date.now()}.${fileExt}`
+        const filePath = `payroll/${fileName}`
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('vouchers')
+          .upload(filePath, invoiceFile)
+
+        if (uploadError) {
+          console.error("Error uploading file:", uploadError)
+          toast.error("Error al subir el comprobante. Verifique que exista el bucket 'vouchers'.")
+          // We continue anyway, or should we stop? User said "permitir cargar un archivo y que este archivo esté enlazado"
+          // If the file upload fails, we probably shouldn't proceed with the payment record if the user intended to attach it.
+          // But maybe they want to proceed without it? Let's stop to be safe.
+          setLoading(false)
+          return
+        }
+
+        if (uploadData) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('vouchers')
+            .getPublicUrl(filePath)
+
+          invoiceUrl = publicUrl
+          invoiceName = invoiceFile.name
+        }
+      }
 
       const result = await addPayrollAction({
         staff_id: selectedStaff,
@@ -79,6 +114,8 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
         period,
         date,
         status: "Pendiente",
+        invoice_url: invoiceUrl,
+        invoice_name: invoiceName,
       })
 
       if (!result.success) {
@@ -95,6 +132,25 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
       toast.error(error.message || "Ocurrió un error inesperado al procesar el pago")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragover") {
+      setIsDragging(true)
+    } else if (e.type === "dragleave") {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setInvoiceFile(e.dataTransfer.files[0])
     }
   }
 
@@ -121,7 +177,7 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
           Realizar Pago
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className="w-[95vw] max-w-[500px] bg-card border-border overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-foreground">Pago de Nómina</DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -200,10 +256,20 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
 
           <div className="space-y-2">
             <Label className="text-foreground">Comprobante (opcional)</Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+            <div
+              className={cn(
+                "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+              )}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+            >
               {invoiceFile ? (
                 <div className="flex items-center justify-between bg-secondary/50 p-3 rounded-lg">
-                  <span className="text-sm text-foreground truncate">{invoiceFile.name}</span>
+                  <span className="text-sm text-foreground truncate" title={invoiceFile.name}>
+                    {truncateFilename(invoiceFile.name, 20)}
+                  </span>
                   <Button
                     type="button"
                     variant="ghost"

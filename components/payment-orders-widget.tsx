@@ -11,6 +11,7 @@ import { updatePaymentOrderStatus } from "@/lib/actions"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { PaymentOrderDetailsModal } from "@/components/payment-order-details-modal"
+import { AmountTicker } from "@/components/ui/amount-ticker"
 
 interface PaymentOrdersWidgetProps {
     paymentOrders: PaymentOrder[]
@@ -97,9 +98,9 @@ export function PaymentOrdersWidget({ paymentOrders, canManage }: PaymentOrdersW
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="text-right">
-                                            <p className="text-sm font-bold font-sans text-foreground">
-                                                ${Number(order.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </p>
+                                            <div className="text-sm font-bold font-sans text-foreground">
+                                                <AmountTicker value={Number(order.amount)} prefix="$" />
+                                            </div>
                                             <div className="flex justify-end mt-1">
                                                 {getStatusBadge(order.status)}
                                             </div>

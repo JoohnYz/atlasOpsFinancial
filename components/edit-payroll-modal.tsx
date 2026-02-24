@@ -3,10 +3,11 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Pencil } from "lucide-react"
+import { Pencil, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { createClient } from "@/lib/supabase/client"
 import {
     Dialog,
     DialogContent,
@@ -18,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Staff, PayrollPayment } from "@/lib/types"
 import { updatePayrollAction } from "@/lib/payroll-actions"
 import { toast } from "sonner"
+import { truncateFilename, cn } from "@/lib/utils"
 
 interface EditPayrollModalProps {
     payment: PayrollPayment | null
@@ -32,6 +34,10 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
     const [amount, setAmount] = useState("")
     const [period, setPeriod] = useState("")
     const [date, setDate] = useState("")
+    const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+    const [currentInvoiceUrl, setCurrentInvoiceUrl] = useState<string | null>(null)
+    const [currentInvoiceName, setCurrentInvoiceName] = useState<string | null>(null)
+    const [isDragging, setIsDragging] = useState(false)
     const [loading, setLoading] = useState(false)
 
     const activeStaff = staff.filter((s) => s.status === "active" || s.status === "Activo")
@@ -43,6 +49,9 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
             setAmount(payment.amount?.toString() || "")
             setPeriod(payment.period || "")
             setDate(payment.payment_date || payment.date || "")
+            setCurrentInvoiceUrl(payment.invoice_url || null)
+            setCurrentInvoiceName(payment.invoice_name || null)
+            setInvoiceFile(null)
         }
     }, [payment])
 
@@ -81,6 +90,35 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
         try {
             const employee = staff.find((s) => s.id === selectedStaff)
             const salaryAmount = Number.parseFloat(amount)
+            let invoiceUrl = currentInvoiceUrl || ""
+            let invoiceName = currentInvoiceName || ""
+
+            if (invoiceFile) {
+                const supabase = createClient()
+                const fileExt = invoiceFile.name.split('.').pop()
+                const fileName = `${selectedStaff}-${Date.now()}.${fileExt}`
+                const filePath = `payroll/${fileName}`
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('vouchers')
+                    .upload(filePath, invoiceFile)
+
+                if (uploadError) {
+                    console.error("Error uploading file:", uploadError)
+                    toast.error("Error al subir el comprobante. Verifique el bucket 'vouchers'.")
+                    setLoading(false)
+                    return
+                }
+
+                if (uploadData) {
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('vouchers')
+                        .getPublicUrl(filePath)
+
+                    invoiceUrl = publicUrl
+                    invoiceName = invoiceFile.name
+                }
+            }
 
             const result = await updatePayrollAction(payment.id, {
                 staff_id: selectedStaff,
@@ -88,6 +126,8 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
                 amount: salaryAmount,
                 period,
                 date,
+                invoice_url: invoiceUrl,
+                invoice_name: invoiceName,
             })
 
             if (!result.success) {
@@ -106,6 +146,25 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
         }
     }
 
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (e.type === "dragover") {
+            setIsDragging(true)
+        } else if (e.type === "dragleave") {
+            setIsDragging(false)
+        }
+    }
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            setInvoiceFile(e.dataTransfer.files[0])
+        }
+    }
+
     const currentYear = new Date().getFullYear()
     const months = [
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -115,7 +174,7 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] bg-card border-border">
+            <DialogContent className="w-[95vw] max-w-[500px] bg-card border-border overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="text-foreground flex items-center gap-2">
                         <Pencil className="w-5 h-5 text-primary" />
@@ -192,6 +251,72 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
                                 className="pl-7 bg-secondary border-border text-foreground"
                                 required
                             />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-foreground">Comprobante (opcional)</Label>
+                        {currentInvoiceUrl && !invoiceFile && (
+                            <div className="flex items-center justify-between bg-primary/10 p-2 rounded-lg mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Upload className="w-4 h-4 text-primary" />
+                                    <span className="text-sm text-foreground truncate max-w-[200px]" title={currentInvoiceName || ""}>
+                                        {truncateFilename(currentInvoiceName || "Archivo actual", 20)}
+                                    </span>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setCurrentInvoiceUrl(null)
+                                        setCurrentInvoiceName(null)
+                                    }}
+                                    className="text-destructive h-7 hover:bg-destructive/10"
+                                >
+                                    Eliminar
+                                </Button>
+                            </div>
+                        )}
+                        <div
+                            className={cn(
+                                "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                                isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                            )}
+                            onDragOver={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDrop={handleDrop}
+                        >
+                            {invoiceFile ? (
+                                <div className="flex items-center justify-between bg-secondary/50 p-3 rounded-lg">
+                                    <span className="text-sm text-foreground truncate" title={invoiceFile.name}>
+                                        {truncateFilename(invoiceFile.name, 20)}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setInvoiceFile(null)}
+                                        className="h-8 w-8"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <label className="cursor-pointer">
+                                    <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                                    <p className="text-sm text-muted-foreground">
+                                        {currentInvoiceUrl ? "Reemplazar comprobante" : "Subir comprobante"} o <span className="text-primary">selecciona</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">PDF, PNG, JPG hasta 10MB</p>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept=".pdf,.png,.jpg,.jpeg"
+                                        onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
+                                    />
+                                </label>
+                            )}
                         </div>
                     </div>
 
