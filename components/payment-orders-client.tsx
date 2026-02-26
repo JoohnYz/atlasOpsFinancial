@@ -36,6 +36,7 @@ import { AddPaymentOrderModal } from "@/components/add-payment-order-modal"
 import { PaymentOrderDetailsModal } from "@/components/payment-order-details-modal"
 import { PaymentOrder } from "@/lib/types"
 import { updatePaymentOrderStatus, deletePaymentOrder } from "@/lib/actions"
+import { getUserSignature } from "@/lib/signature-actions"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -51,9 +52,10 @@ interface PaymentOrdersClientProps {
     initialPaymentOrders: PaymentOrder[]
     canManage: boolean
     isAdmin: boolean
+    hasSignature: boolean
 }
 
-export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }: PaymentOrdersClientProps) {
+export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin, hasSignature }: PaymentOrdersClientProps) {
     const router = useRouter()
     const [modalOpen, setModalOpen] = useState(false)
     const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -106,6 +108,10 @@ export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }
 
 
     const handleAdd = () => {
+        if (!hasSignature) {
+            toast.error("Debes tener una firma registrada en Configuración > Firmas para crear una orden de pago.")
+            return
+        }
         setEditingOrder(null)
         setModalOpen(true)
     }
@@ -141,6 +147,10 @@ export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }
     }
 
     const handleStatusChange = async (id: string, status: "approved" | "rejected") => {
+        if (!hasSignature) {
+            toast.error("Debes tener una firma registrada en Configuración > Firmas para realizar esta acción.")
+            return
+        }
         console.log(`[PaymentOrdersClient] Triggering status change: ${id} -> ${status}`)
         const result = await updatePaymentOrderStatus(id, status)
         console.log(`[PaymentOrdersClient] Server response:`, result)
@@ -352,8 +362,17 @@ export function PaymentOrdersClient({ initialPaymentOrders, canManage, isAdmin }
                                                                 <>
                                                                     <DropdownMenuSeparator />
                                                                     <DropdownMenuItem onClick={async () => {
-                                                                        const { generatePaymentOrderPDF } = await import("@/lib/generate-payment-order-pdf")
-                                                                        generatePaymentOrderPDF(order)
+                                                                        const toastId = toast.loading("Generando PDF...")
+                                                                        try {
+                                                                            const applicantSignature = order.created_by ? await getUserSignature(order.created_by) : null
+                                                                            const approverSignature = order.approved_by ? await getUserSignature(order.approved_by) : null
+
+                                                                            const { generatePaymentOrderPDF } = await import("@/lib/generate-payment-order-pdf")
+                                                                            await generatePaymentOrderPDF(order, applicantSignature, approverSignature)
+                                                                            toast.success("PDF generado exitosamente", { id: toastId })
+                                                                        } catch (e: any) {
+                                                                            toast.error("Error al generar el PDF: " + (e.message || "Desconocido"), { id: toastId })
+                                                                        }
                                                                     }}>
                                                                         <Download className="mr-2 h-4 w-4" /> Descargar PDF
                                                                     </DropdownMenuItem>

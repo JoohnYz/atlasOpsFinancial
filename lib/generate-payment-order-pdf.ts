@@ -1,6 +1,6 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { PaymentOrder } from "@/lib/types"
+import { PaymentOrder, UserSignature } from "@/lib/types"
 import { format } from "date-fns"
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -12,14 +12,15 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
     })
 }
 
-export const generatePaymentOrderPDF = async (order: PaymentOrder) => {
+export const generatePaymentOrderPDF = async (order: PaymentOrder, applicantSignature?: UserSignature | null, approverSignature?: UserSignature | null) => {
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
 
     // Pre-load images
     let logoImg: HTMLImageElement | null = null
-    let signatureImg: HTMLImageElement | null = null
+    let applicantImg: HTMLImageElement | null = null
+    let approverImg: HTMLImageElement | null = null
 
     try {
         logoImg = await loadImage('/logo.png')
@@ -27,10 +28,20 @@ export const generatePaymentOrderPDF = async (order: PaymentOrder) => {
         console.error("Could not load logo", e)
     }
 
-    try {
-        signatureImg = await loadImage('/signature.png')
-    } catch (e) {
-        console.error("Could not load signature", e)
+    if (applicantSignature?.signature_data) {
+        try {
+            applicantImg = await loadImage(applicantSignature.signature_data)
+        } catch (e) {
+            console.error("Could not load applicant signature", e)
+        }
+    }
+
+    if (approverSignature?.signature_data) {
+        try {
+            approverImg = await loadImage(approverSignature.signature_data)
+        } catch (e) {
+            console.error("Could not load approver signature", e)
+        }
     }
 
     // Add Logo
@@ -96,25 +107,46 @@ export const generatePaymentOrderPDF = async (order: PaymentOrder) => {
         columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50, fillColor: [248, 250, 252] } }
     })
 
-    // Footer Signature
+    // Footer Signatures
     const finalY = (doc as any).lastAutoTable.finalY + 35
     if (finalY < 250) {
-        // Add Signature Image
-        if (signatureImg) {
+        const sigWidth = 40
+        const sigHeight = 20
+
+        // Applicant Signature (Left)
+        if (applicantImg) {
             try {
-                // Adjust size as needed, e.g., 40x20
-                const sigWidth = 40
-                const sigHeight = 20
-                doc.addImage(signatureImg, 'PNG', (210 - sigWidth) / 2, finalY - 25, sigWidth, sigHeight)
+                doc.addImage(applicantImg, 'PNG', 40, finalY - 25, sigWidth, sigHeight)
             } catch (e) {
-                console.error("Could not add signature image to PDF", e)
+                console.error("Could not add applicant signature image to PDF", e)
             }
         }
 
         doc.setFontSize(10)
         doc.setTextColor(51, 65, 85)
-        doc.text("Firma Autorizada", 105, finalY, { align: "center" })
-        doc.line(70, finalY - 5, 140, finalY - 5)
+        doc.text("Firma del Solicitante", 60, finalY, { align: "center" })
+        if (applicantSignature?.signer_name) {
+            doc.setFontSize(9)
+            doc.text(applicantSignature.signer_name, 60, finalY + 5, { align: "center" })
+        }
+        doc.line(30, finalY - 5, 90, finalY - 5)
+
+        // Approver Signature (Right)
+        if (approverImg) {
+            try {
+                doc.addImage(approverImg, 'PNG', 130, finalY - 25, sigWidth, sigHeight)
+            } catch (e) {
+                console.error("Could not add approver signature image to PDF", e)
+            }
+        }
+
+        doc.setFontSize(10)
+        doc.text("Firma Autorizada", 150, finalY, { align: "center" })
+        if (approverSignature?.signer_name) {
+            doc.setFontSize(9)
+            doc.text(approverSignature.signer_name, 150, finalY + 5, { align: "center" })
+        }
+        doc.line(120, finalY - 5, 180, finalY - 5)
     }
 
     // Footer and Watermark logic (Decorations)
@@ -125,21 +157,7 @@ export const generatePaymentOrderPDF = async (order: PaymentOrder) => {
             doc.setPage(i)
 
             // 1. Watermark (Background)
-            if (logoImg) {
-                try {
-                    const wmWidth = pageWidth * 0.6
-                    const wmHeight = wmWidth // Square aspect ratio
-                    const x = (pageWidth - wmWidth) / 2
-                    const y = (pageHeight - wmHeight) / 2
-
-                    doc.saveGraphicsState()
-                    doc.setGState(new (doc as any).GState({ opacity: 0.09 }))
-                    doc.addImage(logoImg, 'PNG', x, y, wmWidth, wmHeight)
-                    doc.restoreGraphicsState()
-                } catch (e) {
-                    console.error("Error adding watermark to page " + i, e)
-                }
-            }
+            // Removed per request
 
             // 2. Footer
             doc.setFontSize(10)

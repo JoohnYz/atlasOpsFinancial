@@ -3,6 +3,7 @@
 import { format } from "date-fns"
 import { Check, X, Calendar, CreditCard, DollarSign, FileText, ShieldCheck, Download, Pencil } from "lucide-react"
 import { AmountTicker } from "@/components/ui/amount-ticker"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -49,8 +50,18 @@ export function PaymentOrderDetailsModal({
     }
 
     const handleDownloadPDF = async () => {
-        const { generatePaymentOrderPDF } = await import("@/lib/generate-payment-order-pdf")
-        generatePaymentOrderPDF(order)
+        const toastId = toast.loading("Generando PDF...")
+        try {
+            const { getUserSignature } = await import("@/lib/signature-actions")
+            const applicantSignature = order.created_by ? await getUserSignature(order.created_by) : null
+            const approverSignature = order.approved_by ? await getUserSignature(order.approved_by) : null
+
+            const { generatePaymentOrderPDF } = await import("@/lib/generate-payment-order-pdf")
+            await generatePaymentOrderPDF(order, applicantSignature, approverSignature)
+            toast.success("PDF generado exitosamente", { id: toastId })
+        } catch (e: any) {
+            toast.error("Error al generar el PDF: " + (e.message || "Desconocido"), { id: toastId })
+        }
     }
 
     return (

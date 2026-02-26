@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { PaymentOrder } from "./types"
 import { getUserPermissions } from "./permission-actions"
+import { getUserSignature } from "./signature-actions"
 
 export async function getPendingPaymentOrders() {
     console.log("[Actions] getPendingPaymentOrders called")
@@ -76,6 +77,15 @@ export async function createPaymentOrder(formData: FormData) {
         const { data: userData } = await supabase.auth.getUser()
         const user = userData?.user
         const created_by = user?.email || 'unknown'
+
+        if (!user?.email) {
+            return { error: "No autenticado" }
+        }
+
+        const signature = await getUserSignature(user.email)
+        if (!signature) {
+            return { error: "Debes tener una firma registrada en Configuración > Firmas para crear una orden de pago." }
+        }
 
         // --- Duplicate Check ---
         let duplicateQuery = supabase.from("payment_orders").select("id")
@@ -158,13 +168,29 @@ export async function updatePaymentOrderStatus(id: string, status: "approved" | 
             return { error: "No tienes permiso para gestionar órdenes de pago" }
         }
 
+        const signature = await getUserSignature(user.email)
+        if (!signature) {
+            console.warn(`[Actions] Forbidden: User ${user.email} lacks a registered signature`)
+            return { error: "Debes tener una firma registrada en Configuración > Firmas para aprobar o rechazar órdenes de pago." }
+        }
+
         console.log(`[Actions] Proceeding with DB update for id=${id}`)
+
+        const updateData: any = {
+            status,
+            updated_at: new Date().toISOString()
+        }
+
+        // If approving, record who did it
+        if (status === 'approved') {
+            updateData.approved_by = user.email
+        } else if (status === 'rejected') {
+            updateData.approved_by = null // optionally clear if rejected
+        }
+
         const { error: dbError } = await supabase
             .from("payment_orders")
-            .update({
-                status,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq("id", id)
 
         if (dbError) {

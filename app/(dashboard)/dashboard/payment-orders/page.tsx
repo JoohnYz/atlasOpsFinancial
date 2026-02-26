@@ -3,6 +3,7 @@ import { PaymentOrdersClient } from "@/components/payment-orders-client"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getUserPermissions } from "@/lib/permission-actions"
+import { getUserSignature } from "@/lib/signature-actions"
 
 export default async function PaymentOrdersPage() {
     const supabase = await createClient()
@@ -20,6 +21,9 @@ export default async function PaymentOrdersPage() {
         redirect("/dashboard")
     }
 
+    const signature = await getUserSignature(user.email)
+    const hasSignature = !!signature
+
     const paymentOrders = await getPaymentOrders()
     const { balance, percentageChange, isIncrease } = await calculateMonthlyBalance()
 
@@ -28,6 +32,7 @@ export default async function PaymentOrdersPage() {
             initialPaymentOrders={paymentOrders}
             canManage={permissions?.manage_payment_orders || user.email === 'admin@atlasops.com'}
             isAdmin={user.email === 'admin@atlasops.com'}
+            hasSignature={hasSignature}
         />
     )
 }

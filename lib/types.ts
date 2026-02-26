@@ -97,6 +97,7 @@ export interface PaymentOrder {
   email?: string
   category?: string
   created_by?: string
+  approved_by?: string
   is_rectified?: boolean
 }
 
@@ -167,6 +168,15 @@ export interface Vendor {
   address: string
   rif: string
   state: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface UserSignature {
+  id: string
+  user_email: string
+  signer_name: string
+  signature_data: string
   created_at?: string
   updated_at?: string
 }

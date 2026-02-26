@@ -30,6 +30,7 @@ import { getVendors } from "@/lib/vendor-actions"
 import { ClientManagementSection } from "@/components/client-management-section"
 import { BranchManagementSection } from "@/components/branch-management-section"
 import { VendorManagementSection } from "@/components/vendor-management-section"
+import { SignatureManagementSection } from "@/components/signature-management-section"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -670,8 +671,13 @@ export default function SettingsPage() {
             </>
           )}
           <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+          <TabsTrigger value="firmas">Firmas</TabsTrigger>
           {canManageUsers && <TabsTrigger value="usuarios">Usuarios</TabsTrigger>}
         </TabsList>
+
+        <TabsContent value="firmas" className="space-y-6">
+          <SignatureManagementSection userEmail={userEmail} />
+        </TabsContent>
 
         {canManageCategories && (
           <>
