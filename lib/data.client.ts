@@ -58,6 +58,8 @@ export async function addExpense(data: {
   date: string
   vendor?: string
   notes?: string
+  invoice_url?: string
+  invoice_name?: string
 }) {
   const supabase = createClient()
 
@@ -80,7 +82,7 @@ export async function addExpense(data: {
   }
   // ------------------------
 
-  const { error } = await supabase.from("expenses").insert([
+  const { data: newExpense, error } = await supabase.from("expenses").insert([
     {
       description: data.description,
       amount: data.amount,
@@ -88,15 +90,17 @@ export async function addExpense(data: {
       date: data.date,
       vendor: data.vendor,
       notes: data.notes,
+      invoice_url: data.invoice_url,
+      invoice_name: data.invoice_name,
     },
-  ])
+  ]).select().single()
 
   if (error) {
     console.error("[v0] Error adding expense:", error)
     return { success: false, error: error.message }
   }
 
-  return { success: true }
+  return { success: true, data: newExpense }
 }
 
 export async function addStaff(data: {
@@ -257,6 +261,8 @@ export async function updateExpense(id: string, data: {
   date: string
   vendor?: string
   notes?: string
+  invoice_url?: string
+  invoice_name?: string
 }) {
   const supabase = createClient()
 
@@ -287,6 +293,8 @@ export async function updateExpense(id: string, data: {
     date: data.date,
     vendor: data.vendor,
     notes: data.notes,
+    invoice_url: data.invoice_url,
+    invoice_name: data.invoice_name,
   }).eq("id", id)
 
   if (error) {

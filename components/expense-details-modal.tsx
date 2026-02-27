@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Expense } from "@/lib/types"
-import { Calendar, DollarSign, Tag, ShoppingBag, FileText, Trash2, Edit } from "lucide-react"
+import { Calendar, DollarSign, Tag, ShoppingBag, FileText, Trash2, Edit, Download } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { AmountTicker } from "@/components/ui/amount-ticker"
@@ -103,9 +103,16 @@ export function ExpenseDetailsModal({
                                 <p className="text-sm font-medium text-foreground truncate">Factura Adjunta</p>
                                 <p className="text-xs text-muted-foreground">Documento verificado</p>
                             </div>
-                            <Button variant="ghost" size="sm" asChild>
-                                <a href={expense.invoice_url} target="_blank" rel="noopener noreferrer">Ver</a>
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" asChild>
+                                    <a href={expense.invoice_url} target="_blank" rel="noopener noreferrer">Ver</a>
+                                </Button>
+                                <Button variant="default" size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+                                    <a href={expense.invoice_url} download={expense.invoice_name || "factura"}>
+                                        <Download className="w-4 h-4 mr-1" /> Descargar Factura
+                                    </a>
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>

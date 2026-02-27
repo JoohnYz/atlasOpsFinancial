@@ -20,6 +20,7 @@ import type { Staff, PayrollPayment } from "@/lib/types"
 import { updatePayrollAction } from "@/lib/payroll-actions"
 import { toast } from "sonner"
 import { truncateFilename, cn } from "@/lib/utils"
+import { recordFileUpload } from "@/lib/file-actions"
 
 interface EditPayrollModalProps {
     payment: PayrollPayment | null
@@ -133,6 +134,19 @@ export function EditPayrollModal({ payment, staff, open, onOpenChange, onPayroll
             if (!result.success) {
                 toast.error(result.error || "No se pudo actualizar el pago")
                 return
+            }
+
+            // Only record if we just uploaded a new file
+            if (invoiceFile && invoiceUrl) {
+                const userEmail = (await createClient().auth.getUser()).data.user?.email || "unknown@atlasops.com"
+                await recordFileUpload({
+                    file_name: invoiceName,
+                    file_url: invoiceUrl,
+                    bucket: "vouchers",
+                    module: "payroll",
+                    transaction_id: payment.id,
+                    uploaded_by: userEmail
+                })
             }
 
             toast.success("Pago de nómina actualizado correctamente")

@@ -17,6 +17,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { CategorySelect } from "@/components/category-select"
+import { createClient } from "@/lib/supabase/client"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { recordFileUpload } from "@/lib/file-actions"
 
 interface AddExpenseModalProps {
   onAdd?: (expense: {
@@ -24,6 +28,9 @@ interface AddExpenseModalProps {
     amount: number
     category: string
     date: string
+    vendor?: string
+    invoice_url?: string
+    invoice_name?: string
   }) => void
 }
 
@@ -33,7 +40,9 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState<string>("other")
   const [date, setDate] = useState("")
+  const [vendor, setVendor] = useState("")
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -41,14 +50,60 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
     e.preventDefault()
     setIsSubmitting(true)
     try {
+      let invoiceUrl = ""
+      let invoiceName = ""
+
+      if (invoiceFile) {
+        const supabase = createClient()
+        const fileExt = invoiceFile.name.split('.').pop()
+        const fileName = `expense-${Date.now()}.${fileExt}`
+        const filePath = `expenses/${fileName}`
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('vouchers')
+          .upload(filePath, invoiceFile)
+
+        if (uploadError) {
+          console.error("Error uploading file:", uploadError)
+          toast.error("Error al subir la factura.")
+          setIsSubmitting(false)
+          return
+        }
+
+        if (uploadData) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('vouchers')
+            .getPublicUrl(filePath)
+
+          invoiceUrl = publicUrl
+          invoiceName = invoiceFile.name
+        }
+      }
+
+      const submittedVendor = vendor.trim() === "" ? "No especificado" : vendor.trim()
+
       const result = await onAdd?.({
         description,
         amount: Number.parseFloat(amount),
         category,
         date,
-      }) as unknown as { success: boolean, error?: string }
+        vendor: submittedVendor,
+        invoice_url: invoiceUrl,
+        invoice_name: invoiceName,
+      }) as unknown as { success: boolean, error?: string, data?: { id: string } }
 
       if (result?.success) {
+        if (invoiceUrl && result.data?.id) {
+          const userEmail = (await createClient().auth.getUser()).data.user?.email || "unknown@atlasops.com"
+          await recordFileUpload({
+            file_name: invoiceName,
+            file_url: invoiceUrl,
+            bucket: "vouchers",
+            module: "expense",
+            transaction_id: result.data.id,
+            uploaded_by: userEmail
+          })
+        }
         setOpen(false)
         resetForm()
       }
@@ -57,11 +112,31 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
     }
   }
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragover") {
+      setIsDragging(true)
+    } else if (e.type === "dragleave") {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setInvoiceFile(e.dataTransfer.files[0])
+    }
+  }
+
   const resetForm = () => {
     setDescription("")
     setAmount("")
     setCategory("other")
     setDate("")
+    setVendor("")
     setInvoiceFile(null)
   }
 
@@ -128,14 +203,40 @@ export function AddExpenseModal({ onAdd }: AddExpenseModalProps) {
             </div>
           </div>
 
-          <CategorySelect value={category} onChange={setCategory} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <CategorySelect value={category} onChange={setCategory} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vendor" className="text-foreground">
+                Proveedor (opcional)
+              </Label>
+              <Input
+                id="vendor"
+                placeholder="No especificado"
+                value={vendor}
+                onChange={(e) => setVendor(e.target.value)}
+                className="bg-secondary border-border text-foreground"
+              />
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label className="text-foreground">Factura (opcional)</Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+            <div
+              className={cn(
+                "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+              )}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+            >
               {invoiceFile ? (
                 <div className="flex items-center justify-between bg-secondary/50 p-3 rounded-lg">
-                  <span className="text-sm text-foreground truncate">{invoiceFile.name}</span>
+                  <span className="text-sm text-foreground truncate" title={invoiceFile.name}>
+                    {invoiceFile.name}
+                  </span>
                   <Button
                     type="button"
                     variant="ghost"

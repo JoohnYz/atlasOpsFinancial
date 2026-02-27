@@ -21,6 +21,7 @@ import { addPayrollAction } from "@/lib/payroll-actions"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { truncateFilename, cn } from "@/lib/utils"
+import { recordFileUpload } from "@/lib/file-actions"
 
 interface PayrollModalProps {
   staff: Staff[]
@@ -116,11 +117,23 @@ export function PayrollModal({ staff, onPayrollAdded, onPay }: PayrollModalProps
         status: "Pendiente",
         invoice_url: invoiceUrl,
         invoice_name: invoiceName,
-      })
+      }) as any
 
       if (!result.success) {
         toast.error(result.error || "No se pudo registrar el pago")
         return
+      }
+
+      if (invoiceUrl && result.data?.id) {
+        const userEmail = (await createClient().auth.getUser()).data.user?.email || "unknown@atlasops.com"
+        await recordFileUpload({
+          file_name: invoiceName,
+          file_url: invoiceUrl,
+          bucket: "vouchers",
+          module: "payroll",
+          transaction_id: result.data.id,
+          uploaded_by: userEmail
+        })
       }
 
       toast.success("Pago de nómina registrado correctamente")

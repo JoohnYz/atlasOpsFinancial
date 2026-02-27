@@ -42,7 +42,7 @@ export async function addPayrollAction(data: {
             )
         }
 
-        const { error } = await supabase.from("payroll").insert([
+        const { data: newPayroll, error } = await supabase.from("payroll").insert([
             {
                 staff_id: data.staff_id,
                 employee_name: data.employee_name || "",
@@ -55,7 +55,7 @@ export async function addPayrollAction(data: {
                 invoice_url: data.invoice_url,
                 invoice_name: data.invoice_name,
             },
-        ])
+        ]).select().single()
 
         if (error) {
             console.error("[v0] Action error adding payroll:", error)
@@ -65,7 +65,7 @@ export async function addPayrollAction(data: {
         revalidatePath("/payroll")
         revalidatePath("/dashboard")
 
-        return { success: true }
+        return { success: true, data: newPayroll }
     } catch (error: any) {
         console.error("[v0] Server Action Exception:", error)
 

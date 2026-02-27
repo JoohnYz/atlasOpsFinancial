@@ -316,6 +316,16 @@ export default function ExpensesPage() {
                             >
                               Editar
                             </DropdownMenuItem>
+                            {expense.invoice_url && (
+                              <DropdownMenuItem
+                                className="text-foreground cursor-pointer"
+                                asChild
+                              >
+                                <a href={expense.invoice_url} download={expense.invoice_name || "factura"}>
+                                  Descargar Factura
+                                </a>
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               className="text-destructive cursor-pointer"
                               onClick={() => handleDelete(expense.id)}
